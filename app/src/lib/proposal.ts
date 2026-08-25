@@ -1,5 +1,6 @@
 import { FUENTE_FISICA, RESUMEN } from "./site";
 import { periodoEnAnios } from "./tiempo";
+import { conCiudad } from "./domicilio";
 import { NEGOCIO_VACIO, tieneNegocio, type Negocio } from "./negocio";
 import { porcentajesEnteros } from "./capex";
 import type { Contacto } from "./contactos";
@@ -59,11 +60,6 @@ function esc(v: unknown): string {
  * La comparación ignora acentos y mayúsculas: «Merida» y «Mérida» son la misma ciudad escrita de
  * dos formas, y con una comparación literal la repetición seguiría apareciendo.
  */
-function domicilio(address: string, city: string): string {
-  const plano = (v: string) =>
-    v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  return plano(address).includes(plano(city)) ? address : `${address} · ${city}`;
-}
 
 function arregloTexto(r: Result): string {  const { rows, perRow } = r.layout;
   if (rows <= 0) return "sin arreglo";
@@ -173,7 +169,7 @@ export function buildProposal(
     </div>
     <div class="meta">${hoy}<br>Folio ${folio}</div>
   </div>
-  <p class="who"><b>Domicilio:</b> ${esc(domicilio(address, city))}<br>
+  <p class="who"><b>Domicilio:</b> ${esc(conCiudad(address, city))}<br>
      <b>Tipo de proyecto:</b> ${TYPE_LABEL[d.type]}</p>
   <div class="cards">
     <div class="card"><div class="lab">Producción estimada</div><div class="big">${fmt(Math.round(r.kwh))} kWh/año</div></div>

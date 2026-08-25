@@ -417,3 +417,41 @@ describe("el cableado crítico está en su sitio", () => {
     expect(s).toMatch(/dimensionarCircuito\(\{[\s\S]*?\},\s*d\.site\)/);
   });
 });
+
+describe("el rescate de un análisis sin guardar no degrada la física", () => {
+  /*
+   * El rescate se guarda despojado del sitio, igual que la cartera, porque son 102 sitios y no
+   * caben en cada escritura. Al restaurarlo TAL CUAL, el análisis volvía diciendo «sin medición
+   * local» y con un rendimiento estimado en lugar del medido de esa ciudad: los números cambiaban
+   * en silencio respecto a lo que el instalador tenía en pantalla antes de perder la pestaña.
+   *
+   * La reconstrucción ya existía para abrir un proyecto guardado. Esta guarda fija que se use esa,
+   * en vez de una segunda copia que se desviaría.
+   */
+  const app = readFileSync(resolve(__dirname, "../App.tsx"), "utf8");
+  const sinComentarios = app.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  it("restaura pasando por la apertura de proyecto, que rehace el sitio y el precio", () => {
+    const i = sinComentarios.indexOf("Continuar donde iba");
+    expect(i, "no encontré el botón de continuar").toBeGreaterThan(0);
+    // el onClick está antes del texto del botón en el JSX
+    const tramo = sinComentarios.slice(Math.max(0, i - 900), i);
+    expect(tramo).toContain("openProject(");
+    expect(tramo, "restaurar el diseño tal cual pierde la física medida").not.toMatch(
+      /setDesign\(\s*rescate\.design\s*\)/,
+    );
+  });
+
+  it("el guardado del análisis en curso lleva retardo, no escribe en cada movimiento", () => {
+    // sin retardo, cada arrastre de un vértice del techo escribiría en el almacén, y eso se nota
+    // justo en el dispositivo más lento
+    const i = sinComentarios.indexOf("guardarEnCurso(address, city, design)");
+    expect(i, "no encontré el guardado del análisis en curso").toBeGreaterThan(0);
+    expect(sinComentarios.slice(i - 200, i)).toContain("setTimeout");
+  });
+
+  it("al guardar el proyecto, el rescate se descarta", () => {
+    // si no, quedaría una copia vieja compitiendo con el proyecto real de la cartera
+    expect(sinComentarios).toContain("olvidarEnCurso()");
+  });
+});

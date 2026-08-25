@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { AlertTriangle, Download, Plus, WifiOff } from "lucide-react";
+import { AlertTriangle, Download, Plus, WifiOff , History} from "lucide-react";
 import Sidebar, { type ViewKey } from "./components/shell/Sidebar";
 import Topbar from "./components/shell/Topbar";
 import MobileNav from "./components/shell/MobileNav";
 import NewAnalysisDialog from "./components/NewAnalysisDialog";
 import { resolveSite, type ResolucionOrigen, type PrecisionPunto } from "./lib/geocode";
 import { cargarCarteraSegura, fusionar } from "./lib/transfer";
+import { guardarEnCurso, leerEnCurso, olvidarEnCurso } from "./lib/enCurso";
+import { conCiudad } from "./lib/domicilio";
 import { hayConexion, observarConexion } from "./lib/offline";
 import CommandPalette from "./components/CommandPalette";
 import AvisoPrivacidad from "./components/AvisoPrivacidad";
@@ -87,6 +89,11 @@ export default function App() {
   const [negocio, setNegocio] = useState(false);
   const [ajustando, setAjustando] = useState(false);
   const [saved, setSaved] = useState(false);
+  /**
+   * El análisis que quedó a medias la última vez. Se lee una sola vez al arrancar: si se leyera
+   * después, el propio guardado automático de esta sesión se ofrecería a sí mismo.
+   */
+  const [rescate, setRescate] = useState(leerEnCurso);
 
   const [address, setAddress] = useState("");
   /** Cómo se resolvió la física de esta dirección. Se guarda aparte del diseño porque no
@@ -226,6 +233,33 @@ export default function App() {
     return () => { vigente = false; };
   }, []);
 
+  /*
+
+   * Guarda el análisis en curso mientras se trabaja.
+
+   *
+
+   * Va con un retardo porque el diseño cambia en cada movimiento de un deslizador o de un vértice
+
+   * del techo: escribir en cada cambio castigaría el arrastre justo en el dispositivo más lento.
+
+   * Ochocientos milisegundos sin tocar nada es de sobra para que no se note y muy poco para
+
+   * perder trabajo.
+
+   */
+
+  useEffect(() => {
+
+    if (!address) return;
+
+    const t = setTimeout(() => guardarEnCurso(address, city, design), 800);
+
+    return () => clearTimeout(t);
+
+  }, [address, city, design]);
+
+
   const patchDesign = useCallback((patch: Partial<Design>) => {
     setDesign((s) => ({ ...s, ...patch }));
     setSaved(false);
@@ -237,6 +271,9 @@ export default function App() {
     };
     setProjects((list) => addProject(list, p));
     setSaved(true);
+    // ya está en la cartera: el rescate dejaría una copia vieja compitiendo con el proyecto real
+    olvidarEnCurso();
+    setRescate(null);
   }, [address, city, design]);
 
   /** Restaura proyectos de un respaldo. Los ids repetidos NO se sobrescriben: son el mismo
@@ -299,6 +336,53 @@ export default function App() {
       <Sidebar view={view} onNavigate={setView} onNew={() => setDialog(true)} projectCount={projects.length} onAviso={() => setAviso(true)} onNegocio={() => setNegocio(true)} />
 
       <main className="min-w-0 flex-1 pb-16 md:pb-0">
+        {/* Análisis que quedó sin guardar. Solo se ofrece si el instalador no está ya trabajando en
+            otra dirección: interrumpir un análisis en marcha para hablarle de uno viejo sería
+            cambiarle el trabajo de debajo de las manos. */}
+        {rescate && !address && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line bg-card px-6 py-2.5 txt-mini">
+            <History size={13} className="shrink-0 text-muted" />
+            <span className="text-muted">
+              <span className="font-medium text-ink">Tenías un análisis sin guardar</span> en{" "}
+              {conCiudad(rescate.address, rescate.city, ", ")}.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                // Se reconstruye con `openProject`, que es lo que ya sabe rehacer la física del
+                // sitio y el precio vigente del módulo. Restaurar el diseño tal cual dejaba el
+                // análisis «sin medición local» —el rescate se guarda despojado, igual que la
+                // cartera— y el rendimiento medido de la ciudad se cambiaba por el estimado sin
+                // decir nada. Se pasa por el mismo camino, y luego se marca como no guardado,
+                // que es lo que de verdad es.
+                openProject({
+                  id: "en-curso",
+                  address: rescate.address,
+                  city: rescate.city,
+                  design: rescate.design,
+                  createdAt: rescate.ts,
+                  status: "borrador",
+                });
+                setSaved(false);
+                setRescate(null);
+              }}
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-white transition hover:opacity-90"
+            >
+              Continuar donde iba
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                olvidarEnCurso();
+                setRescate(null);
+              }}
+              className="inline-flex min-h-8 items-center rounded-lg px-2 py-1.5 text-muted underline decoration-line underline-offset-2 transition hover:text-ink"
+            >
+              Descartar
+            </button>
+          </div>
+        )}
+
         {/* Proyectos que no se pudieron leer. Es un aviso de una sola vez y se puede cerrar,
             porque puede que no haya respaldo que importar y entonces no hay nada más que hacer;
             lo que no puede pasar es que la pérdida ocurra sin decirlo. */}

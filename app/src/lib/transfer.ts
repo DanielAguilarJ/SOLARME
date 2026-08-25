@@ -298,6 +298,17 @@ function validaDiseño(v: unknown): Design | null {
   };
 }
 
+/**
+ * Valida un proyecto que viene de fuera.
+ *
+ * Es pública porque la usan dos sitios además de la importación: `cargarCarteraSegura`, que filtra
+ * el almacén con la misma regla al arrancar, y el rescate del análisis en curso. Tener una sola
+ * definición de «un proyecto aprovechable» es lo que evita que las copias se separen.
+ */
+export function validaProyectoImportado(v: unknown): Project | null {
+  return validaProyecto(v);
+}
+
 function validaProyecto(v: unknown): Project | null {
   if (!v || typeof v !== "object") return null;
   const p = v as Record<string, unknown>;
