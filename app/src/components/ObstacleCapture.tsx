@@ -62,9 +62,20 @@ export default function ObstacleCapture({
     setAlto(String(ALTURA_TIPICA[k].height));
   };
 
+  /*
+   * La altura se interpreta aceptando coma decimal.
+   *
+   * El campo no es `type="number"`, así que acepta cualquier texto, y «2,5» —como se escribe a mano
+   * en media hispanoamérica— daba NaN. El botón entonces no hacía NADA: ni agregaba el estorbo ni
+   * decía por qué, que es el mismo fallo silencioso que tenía la propuesta cuando el navegador
+   * bloqueaba la ventana. Es el mismo criterio que usa el campo del costo por watt.
+   */
+  const altura = Number(alto.replace(",", "."));
+  const alturaValida = Number.isFinite(altura) && altura >= MIN_ALTURA && altura <= MAX_ALTURA;
+
   const agregar = () => {
-    const h = Number(alto);
-    if (!Number.isFinite(h) || h < MIN_ALTURA || h > MAX_ALTURA) return;
+    const h = altura;
+    if (!alturaValida) return;
     const tipico = ALTURA_TIPICA[kind];
     const { x, y } = aCoordenadas(fila, col, lado);
     onChange([
@@ -201,9 +212,16 @@ export default function ObstacleCapture({
 
         <button
           onClick={agregar}
-          className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line py-2 text-sm font-medium transition hover:border-ink"
+          disabled={!alturaValida}
+          className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line py-2 text-sm font-medium transition hover:border-ink disabled:cursor-not-allowed disabled:border-line disabled:text-faint disabled:hover:border-line"
         >
-          <Plus size={14} /> Agregar
+          {alturaValida ? (
+            <>
+              <Plus size={14} /> Agregar
+            </>
+          ) : (
+            <>Escribe una altura entre {MIN_ALTURA} y {MAX_ALTURA} m</>
+          )}
         </button>
       </div>
 
