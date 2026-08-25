@@ -43,8 +43,16 @@ export default function BosRateField({ type, rates, onSet, onClear }: Props) {
   };
 
   return (
-    <div className="mt-2 rounded-lg border border-line px-3 py-2.5">
-      <div className="flex items-center gap-2">
+    /*
+     * La caja se mide a sí misma (`@container`) en vez de mirar el ancho de la ventana. Importa
+     * porque este campo vive dentro de una columna de la rejilla financiera: en un portátil de
+     * 1280 px esa columna se quedaba en unos 280 px y, al maquetar el texto y el control en una
+     * fila, el título salía partido en tres líneas y la explicación en once, de una palabra cada
+     * una. La ventana era ancha; la columna, no. Con la medida del contenedor la fila solo se usa
+     * cuando de verdad cabe.
+     */
+    <div className="@container mt-2 rounded-lg border border-line px-3 py-2.5">
+      <div className="flex flex-col gap-2 @sm:flex-row @sm:items-center">
         <span className="min-w-0 flex-1">
           <span className="block text-[13px] font-medium">Tu costo del resto del sistema</span>
           <span className="block txt-mini leading-relaxed text-faint">
@@ -53,6 +61,7 @@ export default function BosRateField({ type, rates, onSet, onClear }: Props) {
           </span>
         </span>
 
+        <span className="flex items-center gap-1">
         <span
           className={`flex shrink-0 items-center gap-1 rounded-lg border bg-paper pl-2 pr-1 transition focus-within:border-ink ${
             own ? "border-leaf-600/40" : "border-line"
@@ -84,6 +93,7 @@ export default function BosRateField({ type, rates, onSet, onClear }: Props) {
         >
           <RotateCcw size={13} />
         </button>
+        </span>
       </div>
     </div>
   );

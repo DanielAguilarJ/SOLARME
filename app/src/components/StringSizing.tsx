@@ -1,4 +1,5 @@
 import { Cable, TriangleAlert, Thermometer, Ruler } from "lucide-react";
+import { periodoEnAnios } from "../lib/tiempo";
 import { LIMITE_CAIDA, ADDER_AZOTEA } from "../lib/conductor";
 import type { Circuito2 } from "../lib/ocpd";
 import { UserCheck } from "lucide-react";
@@ -127,7 +128,7 @@ export default function StringSizing({
             <Thermometer size={13} className="mt-px shrink-0 text-faint" />
             <span>
               A <span className="font-medium text-ink">{r.tFrio} °C</span> —la mínima absoluta
-              medida en {site.diasSerie} días— cada módulo da{" "}
+              medida en {periodoEnAnios(site.diasSerie)} de registro— cada módulo da{" "}
               <span className="font-medium text-ink">{r.vocFrio} V</span> en circuito abierto,
               contra {site.tMinAshrae} °C que usaría el criterio de norma. Caben hasta{" "}
               <span className="font-medium text-ink">{r.max}</span> en serie; una más rebasaría el

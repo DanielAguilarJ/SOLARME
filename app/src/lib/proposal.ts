@@ -1,4 +1,5 @@
 import { FUENTE_FISICA, RESUMEN } from "./site";
+import { periodoEnAnios } from "./tiempo";
 import { porcentajesEnteros } from "./capex";
 import type { Contacto } from "./contactos";
 import { desconectadorCC, desconectadorCA, unifilar, nodosIncompletos } from "./desconexion";
@@ -63,8 +64,7 @@ function domicilio(address: string, city: string): string {
   return plano(address).includes(plano(city)) ? address : `${address} · ${city}`;
 }
 
-function arregloTexto(r: Result): string {
-  const { rows, perRow } = r.layout;
+function arregloTexto(r: Result): string {  const { rows, perRow } = r.layout;
   if (rows <= 0) return "sin arreglo";
   if (rows * perRow === r.n) return `${rows} filas × ${perRow} módulos`;
 
@@ -154,7 +154,7 @@ export function buildProposal(
     ${row("Inclinación / orientación", `${d.tilt}° / ${azLabel(d.az)}`)}
     ${row("Cobertura del consumo", `${r.cov}%`)}
     ${row("Arreglo", arregloTexto(r))}
-    ${row("Pasillo antisombra", `${r.spacing.gap} m (pitch ${r.spacing.pitch} m)`)}
+    ${row("Pasillo antisombra", `${r.spacing.gap} m (paso de fila ${r.spacing.pitch} m)`)}
     ${row("CO₂ evitado", `${r.co2.toFixed(1)} ton/año`)}
     ${row("Inversión estimada", `$${fmt(Math.round(r.capex))} MXN`)}
     ${row("Retorno de inversión", paybackLabel(r))}
@@ -166,19 +166,24 @@ export function buildProposal(
     // sale la geometría del techo. Y de ella dependen los tres números que el cliente lee como
     // si fueran un levantamiento: cuántos paneles, en qué arreglo y con cuánto pasillo.
     //
-    // La app sí lo declara en pantalla («Modo estimado», el techo es una simulación mientras no
-    // haya clave de Google Solar API). Callarlo en el papel es peor que en la pantalla, porque el
-    // papel es lo que el cliente guarda y con lo que compara al instalador que gane la obra.
+    // La app sí lo declara en pantalla, en la franja que dice que el contorno lo traza el
+    // instalador. Callarlo en el papel es peor que en la pantalla, porque el papel es lo que el
+    // cliente guarda y con lo que compara al instalador que gane la obra.
+    //
+    // Cuidado con a quién le habla cada frase: la versión anterior cerraba con «Traza el contorno
+    // antes de comprometer una cantidad», que es una orden para el instalador metida en el
+    // documento que lee el cliente. Es el mismo error que ya se corrigió tres veces en otras
+    // frases. El documento describe lo que hay; el aviso al instalador va en su pantalla.
     const superficie = r.area.toFixed(r.outlineMedido ? 1 : 0);
     return r.outlineMedido
       ? `<p class="note"><b>De dónde sale el techo.</b> Los ${superficie} m² salen del contorno que
          el instalador trazó sobre el plano, no de un levantamiento topográfico ni de una medición
          satelital. El número de módulos, el arreglo y el pasillo antisombra se derivan de ese
          contorno, así que conviene confirmar las medidas en sitio antes de comprar equipo.</p>`
-      : `<p class="note"><b>De dónde sale el techo.</b> No se capturó el contorno real: los
+      : `<p class="note"><b>De dónde sale el techo.</b> Todavía sin el contorno real: los
          ${superficie} m² se tratan como un cuadrado equivalente. El número de módulos y el arreglo
          son un orden de magnitud, no un plano de montaje: un techo de la misma superficie con otra
-         forma admite otro arreglo. Traza el contorno antes de comprometer una cantidad.</p>`;
+         forma admite otro arreglo. La cantidad definitiva sale de la visita técnica.</p>`;
   })()}
 
   <h2>Desglose de la inversión</h2>
@@ -259,7 +264,8 @@ export function buildProposal(
     : ", sin módulos sueltos"}.</p>
 
   <p>El dimensionado usa la temperatura <strong>mínima absoluta medida en ${esc(d.site.nombre)},
-  ${r.strings.rango.tFrio} °C</strong>, sobre ${d.site.diasSerie} días de serie diaria. A esa
+  ${r.strings.rango.tFrio} °C</strong>, sobre ${periodoEnAnios(d.site.diasSerie)} de registro
+  diario. A esa
   temperatura cada módulo entrega ${r.strings.rango.vocFrio} V en circuito abierto, así que la serie
   alcanza <strong>${fmt(Math.round(r.strings.vStringFrio))} V</strong> contra el máximo de
   ${r.ventana.vMax} V del inversor: un margen de ${r.strings.margen.toFixed(1)} %.</p>
@@ -270,8 +276,8 @@ export function buildProposal(
   ${d.site.tMinAshrae} °C, que es menos exigente que el extremo empleado aquí.</p>
 
   <p class="note">La ventana de ${r.ventana.vMax} V corresponde a la clase de inversor de un proyecto
-  de este tamaño, no a un modelo concreto. Antes de comprar, confirma el voltaje máximo y el mínimo
-  de arranque del inversor específico: si difieren, el largo de la serie cambia.</p>
+  de este tamaño, no a un modelo concreto. El voltaje máximo y el mínimo de arranque se confirman con
+  la hoja del inversor que se compre: si difieren, el largo de la serie cambia.</p>
   ${r.inversor ? `<p>Potencia de inversor recomendada:
   <strong>${r.inversor.min} a ${r.inversor.max} kW</strong> para ${r.kwp.toFixed(1)} kWp de módulos.
   Sobredimensionar el arreglo respecto al inversor es normal y aprovecha mejor las horas de sol

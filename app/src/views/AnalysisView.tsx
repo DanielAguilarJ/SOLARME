@@ -236,9 +236,16 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
                     })
                   } />
               </div>
-              {/* Control de capas superpuesto (patrón de apps de mapa) */}
+              {/* Control de capas superpuesto (patrón de apps de mapa).
+                  La primera pestaña se llamaba «Satélite» siempre, y sin imagen aérea eso es una
+                  promesa que la propia esquina de al lado desmiente: lo que se ve es un plano a
+                  escala dibujado por la aplicación. La etiqueta ahora depende de lo que hay. */}
               <div className="absolute left-3 top-3 flex overflow-hidden rounded-lg border border-line bg-card/95 text-[12px] shadow-sm backdrop-blur">
-                {([["sat", "Satélite"], ["flux", "Irradiación"], ["shade", "Sombra"]] as [RoofLayer, string][])
+                {([
+                  ["sat", sat.status === "ok" ? "Satélite" : "Plano"],
+                  ["flux", "Irradiación"],
+                  ["shade", "Sombra"],
+                ] as [RoofLayer, string][])
                   .map(([k, label]) => (
                     <button key={k} onClick={() => setLayer(k)}
                       className={`min-h-11 px-2.5 py-1.5 transition sm:min-h-0 ${
@@ -427,7 +434,11 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Geo k="Pasillo mínimo" v={`${r.spacing.gap} m`}
                 hint="Entre borde trasero y fila siguiente" />
-              <Geo k="Pitch de fila" v={`${r.spacing.pitch} m`}
+              {/* «Pitch de fila» era el único anglicismo que quedaba en una etiqueta visible.
+                  La propuesta ya dice «paso de fila», y tener dos nombres para la misma medida
+                  —uno en la pantalla y otro en el papel que se entrega— obliga al instalador a
+                  traducir mentalmente cuando compara ambos. */}
+              <Geo k="Paso de fila" v={`${r.spacing.pitch} m`}
                 hint="Borde delantero a borde delantero" />
               {/* Con un estorbo el arreglo deja de ser un rectángulo: caben 8 módulos en una
                   rejilla de 2 × 5 porque una fila queda incompleta. Rotularlo "2 × 5" a secas
@@ -492,7 +503,11 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
       )}
 
       {tab === "financiero" && (
-        <div className="fade-up grid gap-6 [&>*]:min-w-0 lg:grid-cols-3">
+        /* Tres columnas a partir de 1024 px dejaban cada una en unos 280 px de contenido útil en un
+           portátil de 1280: los conceptos del desglose salían cortados («Mano de obr…»), que es
+           justo lo que el instalador necesita leer para revisar su costo. Se pasa a dos columnas
+           anchas, y la tercera solo aparece en pantallas que de verdad la sostienen. */
+        <div className="fade-up grid gap-6 [&>*]:min-w-0 lg:grid-cols-2 2xl:grid-cols-3">
           <BillCapture
             bill={d.bill}
             onChange={(bill) => onChange({ bill })}
@@ -527,7 +542,10 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
                     className="flex items-center gap-2 border-b border-line px-3 py-1.5 last:border-0"
                     title={l.note}
                   >
-                    <span className="min-w-0 flex-1 truncate text-[13px]">{l.label}</span>
+                    {/* Antes con `truncate`: un concepto cortado a media palabra no se puede leer,
+                        y el ancho depende de la columna, así que no hay tamaño de pantalla que lo
+                        garantice. Dos líneas siempre son legibles. */}
+                    <span className="min-w-0 flex-1 text-[13px] leading-snug">{l.label}</span>
                     {l.origin === "medido" && (
                       <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 txt-micro font-medium text-leaf-600">
                         medido

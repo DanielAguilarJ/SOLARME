@@ -143,11 +143,16 @@ describe("la propuesta incluye la conexión en series", () => {
     expect(out).toMatch(/de \d+ módulos/);
   });
 
-  it("declara la temperatura extrema usada y de cuántos días sale", () => {
+  it("declara la temperatura extrema usada y cuánto tiempo la respalda", () => {
+    // Antes esta prueba exigía la frase literal «días de serie diaria». Lo que importa no es la
+    // frase: es que el documento diga de cuánto registro sale el extremo. Al decirlo en años —que
+    // es como lo entiende quien recibe la propuesta— la prueba vieja habría bloqueado la mejora.
     const out = html(conSitio("ciudad juarez"));
     expect(out).toContain("mínima absoluta medida");
     expect(out).toMatch(/-?[\d.]+ °C/);
-    expect(out).toMatch(/días de serie diaria/);
+    expect(out).toMatch(/de registro\s+diario/);
+    expect(out).toMatch(/\d+ (años|meses|mes|año) de registro/);
+    expect(out, "«serie diaria» es jerga estadística").not.toMatch(/serie diaria/);
   });
 
   it("compara contra el criterio de norma en vez de esconderlo", () => {
@@ -157,7 +162,12 @@ describe("la propuesta incluye la conexión en series", () => {
   it("advierte que la ventana es una clase de inversor y no un modelo", () => {
     const out = html(conSitio("monterrey"));
     expect(out).toContain("no a un modelo concreto");
-    expect(out).toContain("confirma el voltaje máximo");
+    // la advertencia tiene que seguir estando, pero en tercera persona: la versión anterior decía
+    // «Antes de comprar, confirma el voltaje máximo…», una orden al instalador en el documento del
+    // cliente, y esta prueba exigía esa frase literal
+    expect(out).toMatch(/voltaje máximo y el mínimo de arranque/);
+    expect(out).toMatch(/el largo de la serie cambia/);
+    expect(out, "no se le dan órdenes al lector").not.toMatch(/Antes de comprar, confirma/);
   });
 
   it("da el rango de inversor recomendado", () => {
@@ -334,15 +344,34 @@ describe("la propuesta trae el unifilar y los medios de desconexión", () => {
     // El documento llevaba tres: «El plano no se puede presentar sin cerrarlo», «confírmalo antes
     // de firmar un plano» (dos veces). Son correctas como nota interna y desconcertantes en la
     // cotización de un cliente, que lee que su propio plano «no se puede presentar».
+    // Se le sumó una cuarta, encontrada leyendo el documento impreso: la salvedad del techo
+    // cerraba con «Traza el contorno antes de comprometer una cantidad», que es una orden para
+    // quien instala metida en el papel que se lleva quien compra.
     const out = html(base);
     for (const frase of [
       /no se puede presentar/,
       /confírmalo antes de firmar/,
       /no se pudo consultar directamente/,
       /no se verificó/,
+      /Traza el contorno/,
+      /antes de comprometer/,
     ]) {
       expect(out, `sobra en el documento del cliente: ${frase}`).not.toMatch(frase);
     }
+  });
+
+  it("no usa términos del oficio en inglés", () => {
+    // «Pasillo antisombra 0.74 m (pitch 2.47 m)»: el cliente que recibe esto no sabe qué es un
+    // pitch, y la palabra en español existe y es exacta. Se encontró mirando el documento impreso.
+    const out = html(base);
+    for (const termino of ["pitch", "string", "layout", "array", "derating", "tilt", "azimuth"]) {
+      expect(
+        new RegExp(`\\b${termino}\\b`, "i").test(out),
+        `«${termino}» es jerga en inglés en el documento del cliente`,
+      ).toBe(false);
+    }
+    // y sigue diciendo el dato, con su nombre en español
+    expect(out).toMatch(/paso de fila/);
   });
 
   it("no promete datos satelitales, que la app no tiene", () => {
