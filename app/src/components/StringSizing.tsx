@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Cable, TriangleAlert, Thermometer, Ruler } from "lucide-react";
 import { periodoEnAnios } from "../lib/tiempo";
 import { LIMITE_CAIDA, ADDER_AZOTEA } from "../lib/conductor";
@@ -161,19 +162,7 @@ function Conductor({ circuito, metros, onMetros, site }: {
         <h4 className="flex items-center gap-1.5 txt-mini font-medium">
           <Ruler size={12} className="text-faint" /> Conductor y protección
         </h4>
-        <label className="flex items-center gap-1.5 txt-micro text-muted">
-          Al inversor
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={metros}
-            onChange={(e) => onMetros(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-            aria-label="Metros de una vía del circuito al inversor"
-            className="min-h-11 w-16 rounded border border-line bg-paper px-1.5 py-1 text-right tabular-nums text-ink sm:min-h-0"
-          />
-          m
-        </label>
+        <CampoMetros metros={metros} onMetros={onMetros} />
       </div>
 
       {r?.calibre && p ? (
@@ -293,5 +282,50 @@ function Dato({ k, v, pie, acento }: { k: string; v: string; pie: string; acento
       </div>
       <div className="txt-micro text-faint">{pie}</div>
     </div>
+  );
+}
+
+/**
+ * Los metros de una vía hasta el inversor.
+ *
+ * Va en su propio componente por dos razones. Una técnica: `StringSizing` tiene un retorno temprano
+ * cuando todavía no hay sitio ni series, y un estado declarado después de ese retorno rompe la regla
+ * de los hooks. Y una de uso: el campo necesita un BORRADOR.
+ *
+ * Con el valor atado directamente al cálculo, borrar «15» para escribir «40» dejaba el campo en «1»
+ * de golpe —el mínimo— y el instalador acababa escribiendo «140». Ahora se teclea libre y el número
+ * se confirma al salir del campo o con Enter, que además evita recalcular el conductor en cada
+ * pulsación. Acepta coma decimal, como los otros campos numéricos de la aplicación.
+ */
+function CampoMetros({ metros, onMetros }: { metros: number; onMetros: (m: number) => void }) {
+  const [borrador, setBorrador] = useState<string | null>(null);
+
+  const confirmar = () => {
+    if (borrador === null) return;
+    const v = Number(borrador.replace(",", "."));
+    // un campo vacío o un texto que no es número dejan el valor anterior, en vez de saltar al
+    // mínimo sin avisar
+    if (Number.isFinite(v) && v > 0) onMetros(Math.max(1, Math.min(500, Math.round(v))));
+    setBorrador(null);
+  };
+
+  return (
+    <label className="flex items-center gap-1.5 txt-micro text-muted">
+      Al inversor
+      <input
+        type="text"
+        inputMode="decimal"
+        value={borrador ?? String(metros)}
+        onChange={(e) => setBorrador(e.target.value)}
+        onBlur={confirmar}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") confirmar();
+          if (e.key === "Escape") setBorrador(null);
+        }}
+        aria-label="Metros de una vía del circuito al inversor"
+        className="min-h-11 w-16 rounded border border-line bg-paper px-1.5 py-1 text-right tabular-nums text-ink sm:min-h-0"
+      />
+      m
+    </label>
   );
 }
