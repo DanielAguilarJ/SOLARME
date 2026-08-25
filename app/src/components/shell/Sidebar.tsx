@@ -1,6 +1,7 @@
-import { Sun, LayoutGrid, PanelsTopLeft, Users, Plus, Command, Home, HardDrive } from "lucide-react";
+import { Sun, LayoutGrid, PanelsTopLeft, Users, Plus, Command, Home, HardDrive, Download } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { contarContactos, suscribir } from "../../lib/contactos";
+import { instalar, sePuedeInstalar, suscribirInstalacion } from "../../lib/instalacion";
 
 export type ViewKey = "inicio" | "proyectos" | "analisis" | "paneles" | "instaladores";
 
@@ -18,6 +19,30 @@ const NAV: { key: ViewKey; label: string; icon: React.ReactNode }[] = [
   { key: "paneles", label: "Módulos", icon: <PanelsTopLeft size={16} /> },
   { key: "instaladores", label: "Libreta", icon: <Users size={16} /> },
 ];
+
+/**
+ * Botón para instalar la aplicación en el dispositivo.
+ *
+ * Solo aparece cuando el navegador ha dicho que se puede: si ya está instalada, o si el navegador no
+ * lo ofrece —Safari en iPhone instala desde su menú Compartir—, no se pinta nada. Un botón que no
+ * hace nada es peor que ningún botón.
+ *
+ * Vale la pena tenerlo porque instalada abre a pantalla completa: en una azotea, la franja que se
+ * come la barra de direcciones es justo la que hace falta para ver el techo y los controles.
+ */
+function Instalar() {
+  const puede = useSyncExternalStore(suscribirInstalacion, sePuedeInstalar, () => false);
+  if (!puede) return null;
+
+  return (
+    <button
+      onClick={() => void instalar()}
+      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-line px-2 py-1.5 txt-mini font-medium text-muted transition hover:border-ink hover:text-ink"
+    >
+      <Download size={12} aria-hidden /> Instalar en este dispositivo
+    </button>
+  );
+}
 
 /**
  * Pie de la barra lateral.
@@ -113,6 +138,7 @@ export default function Sidebar({ view, onNavigate, onNew, projectCount, onAviso
 
       <div className="border-t border-line p-3">
         <Almacen projectCount={projectCount} onNavigate={onNavigate} onAviso={onAviso} />
+        <Instalar />
         <p className="mt-2 flex items-center gap-1 px-2.5 txt-mini text-faint">
           <Command size={11} /> K para buscar
         </p>
