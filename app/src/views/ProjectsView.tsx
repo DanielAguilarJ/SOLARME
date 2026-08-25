@@ -2,7 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import { MapPin, Plus, Trash2, SunMedium, Search, X, TriangleAlert, Download, Upload } from "lucide-react";
 import { compute, fmt, GD_LIMIT_KW } from "../lib/solar";
 import { modulePrice } from "../lib/price";
-import { exportProjects, importProjects, nombreArchivo } from "../lib/transfer";
+import { exportProjects, fusionarAjustes, importProjects, nombreArchivo } from "../lib/transfer";
+import { guardarNegocio, leerNegocio } from "../lib/negocio";
+import { guardarBosRates, loadBosRates } from "../lib/bos";
+import { guardarQuotes, loadQuotes } from "../lib/quotes";
 import { guardarContactos, leerContactos, ordenar, type Contacto } from "../lib/contactos";
 import { matchCity } from "../lib/solar";
 import { relativeDate, type Project } from "../lib/storage";
@@ -53,6 +56,20 @@ function fusionarContactos(actuales: Contacto[], entrantes: Contacto[]) {
   return { lista: ordenar([...actuales, ...nuevos]), agregados: nuevos.length };
 }
 
+/** Enumera en español: «a, b y c». */
+function enumerar(xs: string[]): string {
+  if (xs.length <= 1) return xs.join("");
+  return `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
+}
+
+/** True si hay algo capturado a mano que valga la pena anunciar en el respaldo. */
+function tieneAjustes(a: { negocio: { nombre: string; telefono: string; correo: string }; bos: object; quotes: object }): boolean {
+  return Boolean(
+    a.negocio.nombre || a.negocio.telefono || a.negocio.correo ||
+    Object.keys(a.bos).length > 0 || Object.keys(a.quotes).length > 0
+  );
+}
+
 export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onNew, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [aviso, setAviso] = useState<{ texto: string; mal?: boolean } | null>(null);
@@ -62,7 +79,11 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
   const respaldar = () => {
     // La libreta viaja con la cartera: es dato del usuario que se pierde con el navegador.
     const contactos = leerContactos();
-    const blob = new Blob([exportProjects(projects, new Date(), contactos)], {
+    // Y con ellos lo que el instalador capturó a mano: su identidad, su costo por watt y sus
+    // precios por marca. Sin esto el respaldo era una promesa a medias: al restaurar en otro
+    // equipo las propuestas volvían a la referencia nacional sin avisar de nada.
+    const ajustes = { negocio: leerNegocio(), bos: loadBosRates(), quotes: loadQuotes() };
+    const blob = new Blob([exportProjects(projects, new Date(), contactos, ajustes)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
@@ -71,13 +92,33 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
     a.download = nombreArchivo();
     a.click();
     URL.revokeObjectURL(url);
-    const conLibreta = contactos.length > 0
-      ? ` y ${contactos.length} ${contactos.length === 1 ? "contacto" : "contactos"} de la libreta`
-      : "";
+    // El aviso enumera lo que de verdad va en el archivo. Antes empezaba siempre por los
+    // proyectos, y desde que se puede respaldar sin ninguno decía «Respaldo de 0 proyectos, con
+    // tus datos…», que suena a que no se guardó nada.
+    const piezas: string[] = [];
+    if (projects.length > 0) {
+      piezas.push(`${projects.length} ${projects.length === 1 ? "proyecto" : "proyectos"}`);
+    }
+    if (contactos.length > 0) {
+      piezas.push(`${contactos.length} ${contactos.length === 1 ? "contacto" : "contactos"} de la libreta`);
+    }
+    if (tieneAjustes(ajustes)) piezas.push("tus datos y tus precios");
     setAviso({
-      texto: `Respaldo de ${projects.length} ${projects.length === 1 ? "proyecto" : "proyectos"}${conLibreta} descargado.`,
+      texto: piezas.length > 0
+        ? `Respaldo descargado con ${enumerar(piezas)}.`
+        : "Respaldo descargado. Todavía no hay nada guardado que meter en él.",
     });
   };
+
+  /**
+   * True si hay algo que valga la pena respaldar aunque la cartera esté vacía: la libreta, la
+   * identidad del negocio o los precios capturados. Se consulta al almacén en el momento, no al
+   * montar, porque el instalador puede acabar de rellenarlos en otra pantalla.
+   */
+  const hayAlgoQueRespaldar = () =>
+    projects.length > 0 ||
+    leerContactos().length > 0 ||
+    tieneAjustes({ negocio: leerNegocio(), bos: loadBosRates(), quotes: loadQuotes() });
 
   const restaurar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const archivo = e.target.files?.[0];
@@ -95,7 +136,20 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
     const nuevosContactos = fusionarContactos(leerContactos(), r.contactos);
     if (nuevosContactos.agregados > 0) guardarContactos(nuevosContactos.lista);
 
+    // Los ajustes entran donde el equipo no tiene nada; lo local nunca se sobrescribe, porque un
+    // respaldo se importa para recuperar algo y a veces el archivo es de un compañero.
+    const ajustes = fusionarAjustes(
+      { negocio: leerNegocio(), bos: loadBosRates(), quotes: loadQuotes() },
+      r.ajustes,
+    );
+    if (ajustes.aplicados.length > 0) {
+      if (ajustes.ajustes.negocio) guardarNegocio(ajustes.ajustes.negocio);
+      if (ajustes.ajustes.bos) guardarBosRates(ajustes.ajustes.bos);
+      if (ajustes.ajustes.quotes) guardarQuotes(ajustes.ajustes.quotes);
+    }
+
     const partes = [`${agregados} ${agregados === 1 ? "proyecto restaurado" : "proyectos restaurados"}`];
+    if (ajustes.aplicados.length > 0) partes.push(ajustes.aplicados.join(" y "));
     if (nuevosContactos.agregados > 0) {
       partes.push(`${nuevosContactos.agregados} ${nuevosContactos.agregados === 1 ? "contacto" : "contactos"} a la libreta`);
     }
@@ -177,6 +231,19 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
           >
             <Plus size={15} /> Analizar un domicilio
           </button>
+          {/* Y respaldar también, cuando ya hay algo que perder aunque no sea un proyecto.
+              El pie de la barra lateral ofrece «Respaldar en un archivo» y trae aquí; con la
+              cartera vacía no había botón, así que quien dedicó el primer día a poner sus datos,
+              sus precios y su libreta no tenía forma de guardarlos. Y esos datos se pierden con el
+              navegador igual que los proyectos. */}
+          {hayAlgoQueRespaldar() && (
+            <button
+              onClick={respaldar}
+              className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2.5 text-sm font-medium text-muted transition hover:border-ink hover:text-ink"
+            >
+              <Download size={15} /> Respaldar mis datos
+            </button>
+          )}
           {/* Restaurar tiene que estar AQUÍ. El estado vacío es justo el de quien acaba de
               cambiar de computadora, y antes los botones vivían solo en la cabecera de la
               lista: con la cartera vacía no había manera de traer el respaldo. */}

@@ -3,6 +3,9 @@ import { AlertTriangle, Download, RotateCcw } from "lucide-react";
 import { exportProjects, nombreArchivo } from "../lib/transfer";
 import { loadProjects } from "../lib/storage";
 import { leerContactos } from "../lib/contactos";
+import { leerNegocio } from "../lib/negocio";
+import { loadBosRates } from "../lib/bos";
+import { loadQuotes } from "../lib/quotes";
 
 /**
  * Límite de error de la aplicación.
@@ -53,8 +56,14 @@ export default class ErrorBoundary extends Component<Props, State> {
     try {
       const proyectos = loadProjects();
       // Se incluye la libreta: es trabajo del instalador igual que los proyectos, y este
-      // respaldo puede ser el último que consiga si el fallo se repite.
-      const texto = exportProjects(proyectos, new Date(), leerContactos());
+      // respaldo puede ser el último que consiga si el fallo se repite. Y con ella lo que capturó
+      // a mano —su identidad, su costo por watt y sus precios—, que también se pierde con el
+      // navegador y no se puede recuperar de ninguna parte.
+      const texto = exportProjects(proyectos, new Date(), leerContactos(), {
+        negocio: leerNegocio(),
+        bos: loadBosRates(),
+        quotes: loadQuotes(),
+      });
       const url = URL.createObjectURL(new Blob([texto], { type: "application/json" }));
       const a = document.createElement("a");
       a.href = url;

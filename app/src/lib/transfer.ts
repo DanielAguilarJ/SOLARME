@@ -3,6 +3,9 @@ import type { Design, Panel, ProjectType } from "./solar";
 import type { Obstacle, ObstacleKind } from "./shading";
 import type { Punto } from "./polygon";
 import { sanear, type Contacto } from "./contactos";
+import { NEGOCIO_VACIO, normalizaNegocio, tieneNegocio, type Negocio } from "./negocio";
+import { isValidBos, type BosRates } from "./bos";
+import { isValidQuote, type Quotes } from "./quotes";
 
 /**
  * Exportar e importar la cartera como archivo.
@@ -18,7 +21,24 @@ import { sanear, type Contacto } from "./contactos";
  */
 
 export const FORMATO = "solarme.cartera";
-export const VERSION = 1;
+export const VERSION = 2;
+
+/**
+ * Lo que el instalador capturó a mano y no son proyectos ni contactos.
+ *
+ * Quedaba fuera del respaldo, y eso lo convertía en una promesa a medias: quien cambiaba de
+ * dispositivo recuperaba su cartera y su libreta, pero no su identidad ni sus precios. Lo grave es
+ * lo segundo: sin su costo por watt y sin sus precios por marca, las propuestas que generara
+ * después volvían a la referencia nacional y le daban al cliente cifras distintas SIN avisar.
+ */
+export interface Ajustes {
+  /** Identidad del negocio: la que firma la propuesta y el aviso de privacidad. */
+  negocio?: Negocio;
+  /** Costo por watt del resto del sistema, por tipo de proyecto. */
+  bos?: BosRates;
+  /** Precio por watt pico negociado, por marca de módulo. */
+  quotes?: Quotes;
+}
 
 interface Archivo {
   formato: string;
@@ -27,6 +47,8 @@ interface Archivo {
   proyectos: Project[];
   /** La libreta de la obra. Opcional: un archivo de una versión anterior no la trae. */
   contactos?: Contacto[];
+  /** Lo capturado a mano. Opcional: los archivos de la versión 1 no lo traen. */
+  ajustes?: Ajustes;
 }
 
 const ESTADOS = ["borrador", "propuesta", "ganado"] as const;
@@ -37,10 +59,108 @@ const esNumero = (v: unknown): v is number =>
   typeof v === "number" && Number.isFinite(v);
 const esTexto = (v: unknown): v is string => typeof v === "string" && v.length > 0;
 
+/** True si los ajustes traen algo que valga la pena guardar. */
+function tieneAlgo(a: Ajustes): boolean {
+  return Boolean(
+    (a.negocio && tieneNegocio(a.negocio)) ||
+      (a.bos && Object.keys(a.bos).length > 0) ||
+      (a.quotes && Object.keys(a.quotes).length > 0)
+  );
+}
+
+/** Deja fuera los campos vacíos, para que el archivo diga solo lo que hay. */
+function soloLoQueHay(a: Ajustes): Ajustes {
+  const r: Ajustes = {};
+  if (a.negocio && tieneNegocio(a.negocio)) r.negocio = a.negocio;
+  if (a.bos && Object.keys(a.bos).length > 0) r.bos = a.bos;
+  if (a.quotes && Object.keys(a.quotes).length > 0) r.quotes = a.quotes;
+  return r;
+}
+
+/**
+ * Valida los ajustes de un archivo importado, que es entrada no confiable como el resto.
+ *
+ * Un valor fuera de rango no invalida el archivo: se descarta ese valor. Un costo por watt de 999
+ * metido a mano en el JSON no puede tumbar la importación de veinte proyectos, y tampoco puede
+ * colarse: se usaría en cada propuesta como si fuera un dato del instalador.
+ */
+function validaAjustes(v: unknown): Ajustes {
+  if (!v || typeof v !== "object") return {};
+  const o = v as Record<string, unknown>;
+  const out: Ajustes = {};
+
+  if (o.negocio) {
+    const n = normalizaNegocio(o.negocio);
+    if (tieneNegocio(n)) out.negocio = n;
+  }
+
+  if (o.bos && typeof o.bos === "object") {
+    const bos: BosRates = {};
+    for (const tipo of TIPOS) {
+      const valor = (o.bos as Record<string, unknown>)[tipo];
+      if (esNumero(valor) && isValidBos(valor)) bos[tipo] = valor;
+    }
+    if (Object.keys(bos).length > 0) out.bos = bos;
+  }
+
+  if (o.quotes && typeof o.quotes === "object") {
+    const quotes: Quotes = {};
+    for (const [marca, valor] of Object.entries(o.quotes as Record<string, unknown>)) {
+      if (esTexto(marca) && esNumero(valor) && isValidQuote(valor)) quotes[marca] = valor;
+    }
+    if (Object.keys(quotes).length > 0) out.quotes = quotes;
+  }
+
+  return out;
+}
+
+/**
+ * Combina los ajustes del archivo con los del dispositivo, SIN sobrescribir los locales.
+ *
+ * Misma regla que `fusionar` para los proyectos, y por el mismo motivo: un respaldo se importa a
+ * menudo para recuperar algo, no para reemplazarlo todo, y a veces el archivo es de un compañero.
+ * Que el respaldo de otro le cambie a alguien la razón social de sus propuestas sería un desastre
+ * silencioso. Lo del archivo entra donde el dispositivo no tiene nada.
+ */
+export function fusionarAjustes(local: Ajustes, entrantes: Ajustes): {
+  ajustes: Ajustes;
+  /** Qué se tomó del archivo, para poder decirlo en pantalla. */
+  aplicados: string[];
+} {
+  const aplicados: string[] = [];
+  const negocioLocal = local.negocio ?? NEGOCIO_VACIO;
+  const usaNegocioDelArchivo = !tieneNegocio(negocioLocal) && Boolean(entrantes.negocio);
+  if (usaNegocioDelArchivo) aplicados.push("los datos del negocio");
+
+  const bos: BosRates = { ...entrantes.bos, ...local.bos };
+  const nuevosBos = Object.keys(entrantes.bos ?? {}).filter(
+    (k) => !(k in (local.bos ?? {}))
+  ).length;
+  if (nuevosBos > 0) aplicados.push(`${nuevosBos} costo${nuevosBos === 1 ? "" : "s"} por watt`);
+
+  const quotes: Quotes = { ...entrantes.quotes, ...local.quotes };
+  const nuevosQuotes = Object.keys(entrantes.quotes ?? {}).filter(
+    (k) => !(k in (local.quotes ?? {}))
+  ).length;
+  if (nuevosQuotes > 0) {
+    aplicados.push(`${nuevosQuotes} precio${nuevosQuotes === 1 ? "" : "s"} de módulo`);
+  }
+
+  return {
+    ajustes: {
+      negocio: usaNegocioDelArchivo ? entrantes.negocio : negocioLocal,
+      bos,
+      quotes,
+    },
+    aplicados,
+  };
+}
+
 export function exportProjects(
   list: Project[],
   ahora = new Date(),
-  contactos: Contacto[] = []
+  contactos: Contacto[] = [],
+  ajustes: Ajustes = {}
 ): string {
   const doc: Archivo = {
     formato: FORMATO,
@@ -51,6 +171,9 @@ export function exportProjects(
     // La libreta viaja con la cartera. La vista promete que lo hace, así que tiene que hacerlo:
     // es dato del usuario que se pierde con el navegador y no se puede recuperar de ningún lado.
     contactos,
+    // Solo se escribe lo que hay: un respaldo con «ajustes: {}» y tres campos vacíos no dice nada
+    // y sí invita a sobrescribir con vacíos al importarlo.
+    ...(tieneAlgo(ajustes) ? { ajustes: soloLoQueHay(ajustes) } : {}),
   };
   return JSON.stringify(doc, null, 1);
 }
@@ -196,6 +319,8 @@ export interface Importado {
   proyectos: Project[];
   /** Contactos del archivo, ya saneados. Vacío si el archivo no traía libreta. */
   contactos: Contacto[];
+  /** Lo que el instalador había capturado a mano: identidad y precios. Vacío si el archivo no lo trae. */
+  ajustes: Ajustes;
   /** Entradas descartadas por no pasar la validación. */
   omitidos: number;
   /** Motivo cuando el archivo entero no sirve. */
@@ -207,23 +332,23 @@ export function importProjects(texto: string): Importado {
   try {
     doc = JSON.parse(texto);
   } catch {
-    return { proyectos: [], contactos: [], omitidos: 0, error: "El archivo no es un JSON válido." };
+    return { proyectos: [], contactos: [], ajustes: {}, omitidos: 0, error: "El archivo no es un JSON válido." };
   }
   if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
-    return { proyectos: [], contactos: [], omitidos: 0, error: "El archivo no tiene la forma esperada." };
+    return { proyectos: [], contactos: [], ajustes: {}, omitidos: 0, error: "El archivo no tiene la forma esperada." };
   }
   const a = doc as Record<string, unknown>;
   if (a.formato !== FORMATO) {
-    return { proyectos: [], contactos: [], omitidos: 0, error: "El archivo no es una cartera de SolarMe." };
+    return { proyectos: [], contactos: [], ajustes: {}, omitidos: 0, error: "El archivo no es una cartera de SolarMe." };
   }
   if (!esNumero(a.version) || (a.version as number) > VERSION) {
     return {
-      proyectos: [], contactos: [], omitidos: 0,
+      proyectos: [], contactos: [], ajustes: {}, omitidos: 0,
       error: "El archivo viene de una versión más nueva de SolarMe.",
     };
   }
   if (!Array.isArray(a.proyectos)) {
-    return { proyectos: [], contactos: [], omitidos: 0, error: "El archivo no trae proyectos." };
+    return { proyectos: [], contactos: [], ajustes: {}, omitidos: 0, error: "El archivo no trae proyectos." };
   }
 
   const validos: Project[] = [];
@@ -243,6 +368,7 @@ export function importProjects(texto: string): Importado {
   return {
     proyectos: validos,
     contactos,
+    ajustes: validaAjustes(a.ajustes),
     omitidos: a.proyectos.length - validos.length + omitidosContactos,
   };
 }

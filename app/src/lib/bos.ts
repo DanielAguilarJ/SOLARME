@@ -50,6 +50,22 @@ export function loadBosRates(): BosRates {
   }
 }
 
+/**
+ * Escribe el conjunto completo, filtrando lo que no sea un costo válido.
+ *
+ * Es pública porque la restauración de un respaldo trae el conjunto de golpe, y hacerlo con
+ * `setBos` una por una escribiría tres veces y dejaría estados intermedios en el almacén. Filtra
+ * con la misma regla que `loadBosRates`: un archivo editado a mano no puede colar un 999.
+ */
+export function guardarBosRates(r: BosRates): void {
+  const limpio: BosRates = {};
+  for (const t of TYPES) {
+    const v = r[t];
+    if (typeof v === "number" && isValidBos(v)) limpio[t] = v;
+  }
+  persist(limpio);
+}
+
 function persist(r: BosRates) {
   try {
     localStorage.setItem(KEY, JSON.stringify(r));

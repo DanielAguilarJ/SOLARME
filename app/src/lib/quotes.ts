@@ -45,6 +45,21 @@ export function loadQuotes(): Quotes {
   }
 }
 
+/**
+ * Escribe el conjunto completo, filtrando lo que no sea un precio válido.
+ *
+ * Es pública porque la restauración de un respaldo trae todas las marcas de golpe. Normaliza a
+ * minúsculas igual que `loadQuotes`, o «Trina» y «trina» acabarían siendo dos precios distintos
+ * para la misma marca según de qué equipo viniera el archivo.
+ */
+export function guardarQuotes(q: Quotes): void {
+  const limpio: Quotes = {};
+  for (const [marca, v] of Object.entries(q)) {
+    if (typeof v === "number" && isValidQuote(v)) limpio[marca.toLowerCase()] = v;
+  }
+  persist(limpio);
+}
+
 function persist(q: Quotes) {
   try {
     localStorage.setItem(KEY, JSON.stringify(q));
