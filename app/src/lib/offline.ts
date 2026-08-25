@@ -10,7 +10,12 @@ export function registrarTrabajador() {
   if (!import.meta.env.PROD) return;
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
+    // La ruta sale de la BASE con la que se compiló, no de «/». Publicada en un subdirectorio
+    // —GitHub Pages sirve en `/<repo>/`— un `/sw.js` absoluto da 404 y la app se queda SIN
+    // funcionamiento sin señal, que es justo su promesa. Medido: el registro fallaba con 404.
+    // El `scope` se declara explícito para que el trabajador controle solo su subdirectorio.
+    const base = import.meta.env.BASE_URL || "/";
+    navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => {
       // sin trabajador la app sigue funcionando con conexión; no hay nada que avisar
     });
   });

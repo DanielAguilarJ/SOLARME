@@ -1,0 +1,62 @@
+name: Publicar en GitHub Pages
+
+# Publica la app cada vez que main avanza. El build ya corre oxlint, tsc y las 920 pruebas
+# (está en el script `build`), así que un cambio que rompa algo NO llega a producción: el paso
+# falla antes de subir el artefacto.
+#
+# GitHub Pages sirve el sitio en /<repo>/, por eso el build recibe BASE_URL: sin él los assets
+# y el service worker se pedirían a la raíz del dominio y la app quedaría en blanco y sin
+# funcionamiento offline.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez: dos a la vez pueden dejar el sitio en un estado mezclado.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Instalar dependencias exactas
+        run: npm ci
+
+      - name: Compilar (lint, tipos, 920 pruebas y build)
+        run: npm run build
+        env:
+          BASE_URL: /${{ github.event.repository.name }}/
+
+      - name: Preparar el artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v4

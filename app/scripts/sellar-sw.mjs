@@ -23,15 +23,23 @@ import { createHash } from "node:crypto";
 const dist = new URL("../dist/", import.meta.url);
 const html = readFileSync(new URL("index.html", dist), "utf8");
 
-// Los assets con hash que referencia el índice compilado.
-const assets = [...html.matchAll(/\/assets\/[^"']+\.(?:js|css)/g)].map((m) => m[0]);
+// Los assets con hash que referencia el índice compilado. Se acepta cualquier prefijo porque la
+// app puede publicarse en un subdirectorio (GitHub Pages sirve en `/<repo>/`).
+const assets = [...html.matchAll(/(?:src|href)="([^"']*\/assets\/[^"']+\.(?:js|css))"/g)].map(
+  (m) => m[1]
+);
 if (assets.length === 0) {
   console.error("sellar-sw: no encontré assets en dist/index.html; ¿cambió el build?");
   process.exit(1);
 }
 
 const version = "solarme-" + createHash("sha256").update(assets.sort().join("|")).digest("hex").slice(0, 12);
-const precache = ["/", "/index.html", ...assets];
+
+// La BASE sale del propio HTML: si la app se publica en `/SOLARME/`, sus assets llegan con ese
+// prefijo. Precachear «/» a secas serviría la raíz del dominio, que no es la app, y el respaldo de
+// navegación buscaría un index.html que no existe en esa ruta.
+const base = assets[0].replace(/assets\/.*$/, "");
+const precache = [base, `${base}index.html`, ...assets];
 
 const swPath = new URL("sw.js", dist);
 let sw = readFileSync(swPath, "utf8");
@@ -39,6 +47,8 @@ let sw = readFileSync(swPath, "utf8");
 const antesVersion = sw;
 sw = sw.replace(/const VERSION = "[^"]*";/, `const VERSION = "${version}";`);
 sw = sw.replace(/const ESENCIALES = \[[^\]]*\];/, `const ESENCIALES = ${JSON.stringify(precache)};`);
+// El respaldo de navegación sin red debe apuntar al index.html de la BASE, no al de la raíz.
+sw = sw.replace(/caches\.match\("\/index\.html"\)/, `caches.match("${base}index.html")`);
 
 if (sw === antesVersion) {
   console.error("sellar-sw: no encontré VERSION/ESENCIALES para sustituir; ¿cambió sw.js?");
