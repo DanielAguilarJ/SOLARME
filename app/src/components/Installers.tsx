@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus, Search, Phone, Mail, MapPin, BadgeCheck, Trash2, TriangleAlert, X,
 } from "lucide-react";
@@ -182,9 +182,26 @@ function Alta({ onClose, onSave }: { onClose: () => void; onSave: (c: Contacto) 
   const set = (k: keyof Contacto, v: string) => setF((p) => ({ ...p, [k]: v }));
   const listo = contactoValido(f);
 
+  /*
+   * Escape cierra, y el fondo también. Era el único diálogo de la aplicación que no lo hacía —el
+   * resto sigue esta convención— así que quien lo abría sin querer tenía que buscar la X con el
+   * ratón, y en un teléfono, con el teclado abierto tapando media pantalla, la X queda arriba.
+   */
+  useEffect(() => {
+    const alTeclado = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", alTeclado);
+    return () => window.removeEventListener("keydown", alTeclado);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-40 grid place-items-end bg-ink/25 p-0 sm:place-items-center sm:p-6">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-40 grid place-items-end bg-ink/25 p-0 sm:place-items-center sm:p-6"
+    >
       <div
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label="Agregar contacto a la libreta"
