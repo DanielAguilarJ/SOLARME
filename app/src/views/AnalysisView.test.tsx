@@ -32,12 +32,12 @@ const design: Design = {
   lat: site.lat, lng: site.lng, yield: site.rendimiento, site,
 } as unknown as Design;
 
-function pintar() {
+function pintar(d: Design = design) {
   return render(
     <AnalysisView
       address="Av. Chapultepec 100"
       city={city.name}
-      design={design}
+      design={d}
       onChange={() => undefined}
       onSave={() => undefined}
       saved={false}
@@ -108,5 +108,38 @@ describe("cuando el navegador bloquea la ventana de la propuesta", () => {
     expect(escrito[0]).toContain("Av. Chapultepec 100");
     // No se crea un archivo cuando no hace falta.
     expect(urls).toEqual([]);
+  });
+});
+
+/**
+ * Un techo donde no cabe ni un módulo.
+ *
+ * El cálculo ya lo sabía —devuelve `noCabe`— pero en pantalla solo se veía un «no cabe» en la
+ * esquina del retorno, con la producción, el ahorro y el CO2 en cero. El instalador leía cuatro
+ * ceros sin saber si el techo no da o si es cosa de la inclinación, que es justo lo que puede
+ * cambiar con un deslizador.
+ */
+describe("cuando no cabe ningún módulo", () => {
+  // 2 m² no alcanzan ni para un módulo del catálogo, que ronda los 2 m² de área
+  const minusculo = { ...design, area: 2 } as Design;
+
+  it("lo dice con la superficie que hay, no solo con ceros", () => {
+    const { container } = pintar(minusculo);
+    expect(container.textContent).toMatch(/No cabe ningún módulo en 2 m²/);
+  });
+
+  it("dice cuántos metros faltan, que es lo que permite decidir", () => {
+    const { container } = pintar(minusculo);
+    expect(container.textContent).toMatch(/faltan .*m de fondo/);
+  });
+
+  it("explica que la inclinación cambia el fondo que ocupa cada fila", () => {
+    const { container } = pintar(minusculo);
+    expect(container.textContent).toMatch(/bajar la inclinación aprieta las filas/);
+  });
+
+  it("con un techo normal no aparece la advertencia", () => {
+    const { container } = pintar();
+    expect(container.textContent).not.toMatch(/No cabe ningún módulo/);
   });
 });

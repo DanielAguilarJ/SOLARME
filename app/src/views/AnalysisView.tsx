@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { leerNegocio } from "../lib/negocio";
 import {
   Zap, PiggyBank, TrendingUp, Leaf, Compass, Ruler, SunMedium, CloudSun,
-  FileDown, Save, Check, MapPinned} from "lucide-react";
+  FileDown, Save, Check, MapPinned, TriangleAlert} from "lucide-react";
 import {
   compute, optTiltFor, optAzFor, azPenalty, azLabel, fmt, paybackLabel, orientationAdvice,
   RUN_METERS_INICIAL,
@@ -169,6 +169,35 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
           v={r.noCabe ? "—" : r.payback.toFixed(1)} u={r.noCabe ? "no cabe" : "años"} />
         <Metric icon={<Leaf size={15} />} k="CO₂ evitado / año" v={r.co2.toFixed(1)} u="ton" />
       </div>
+
+      {/* Techo sin espacio para un solo módulo. El cálculo ya lo sabía —`noCabe`— pero en pantalla
+          solo se veía un «no cabe» en la esquina del retorno, con todo lo demás en cero: el
+          instalador leía cuatro ceros sin saber si el techo no da o si es cosa de la inclinación.
+          Con la cifra que falta, la decisión es inmediata. */}
+      {r.noCabe && (
+        <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-solar-500/30 bg-solar-500/5 px-4 py-3 text-xs leading-relaxed">
+          <TriangleAlert size={14} className="mt-0.5 shrink-0 text-solar-600" />
+          <span>
+            <b className="font-semibold">No cabe ningún módulo en {r.area.toFixed(0)} m².</b>{" "}
+            {r.placement.faltaParaOtraFila > 0 ? (
+              <>
+                A esta superficie le faltan{" "}
+                <b className="font-semibold">
+                  {r.placement.faltaParaOtraFila.toFixed(1)} m de fondo
+                </b>{" "}
+                para la primera fila: un módulo inclinado {d.tilt}° ocupa más fondo que tumbado, así
+                que bajar la inclinación aprieta las filas y a veces resuelve.
+              </>
+            ) : (
+              <>
+                El ancho disponible no alcanza para un módulo. Traza el contorno real del techo si
+                todavía no lo hiciste: el cuadrado supuesto reparte la superficie de la peor manera
+                posible cuando la azotea es alargada.
+              </>
+            )}
+          </span>
+        </div>
+      )}
 
       <div className="mb-5">
         {propuestaBloqueada && (
