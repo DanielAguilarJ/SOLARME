@@ -1,5 +1,6 @@
 import { Receipt, TriangleAlert } from "lucide-react";
 import { annualFromBill, tariffFromBill, fmt, type Bill } from "../lib/solar";
+import { revisarRecibo } from "../lib/recibo";
 
 interface Props {
   bill: Bill | undefined;
@@ -22,6 +23,9 @@ export default function BillCapture({ bill, onChange, fallback }: Props) {
 
   const annual = active ? annualFromBill(b) : 0;
   const tariff = active ? tariffFromBill(b) : 0;
+  // Revisión de lo capturado: los dos campos están juntos y confundirlos con el recibo en la mano
+  // es facilísimo. Nada fallaba, y el ahorro salía en la décima parte del real.
+  const revision = revisarRecibo(bill);
 
   function patch(next: Partial<Bill>) {
     const merged = { ...b, ...next };
@@ -96,7 +100,25 @@ export default function BillCapture({ bill, onChange, fallback }: Props) {
             note={`el promedio del tipo era ${fmt(fallback)} kWh`} />
           <Derived k="Precio efectivo" v={`$${tariff.toFixed(2)} / kWh`}
             note="incluye escalones y cargos fijos del recibo" />
-          {tariff > 5 && (
+          {revision?.fueraDeRango && (
+            <div className="flex gap-2 rounded-lg border border-solar-600/40 bg-solar-500/10 px-3 py-2.5">
+              <TriangleAlert size={14} className="mt-0.5 shrink-0 text-solar-600" />
+              <p className="txt-mini leading-relaxed">
+                <b className="font-semibold">
+                  ${revision.precio.toFixed(2)} por kWh no corresponde a ninguna tarifa de CFE.
+                </b>{" "}
+                {revision.precioSiSeInvierten !== undefined ? (
+                  <>
+                    Con el consumo y el importe al revés saldría ${revision.precioSiSeInvierten.toFixed(2)},
+                    que sí es un precio real: revisa si los dos campos están cambiados.
+                  </>
+                ) : (
+                  <>Revisa los dos números contra el recibo antes de cotizar con este ahorro.</>
+                )}
+              </p>
+            </div>
+          )}
+          {!revision?.fueraDeRango && tariff > 5 && (
             <div className="flex gap-2 rounded-lg border border-solar-500/30 bg-solar-500/5 px-3 py-2.5">
               <TriangleAlert size={14} className="mt-0.5 shrink-0 text-solar-600" />
               <p className="txt-mini leading-relaxed">
