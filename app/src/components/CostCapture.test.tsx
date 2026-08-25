@@ -25,6 +25,7 @@ const pintar = (quotes: Quotes = {}) => {
   const onSet = vi.fn();
   const onClear = vi.fn();
   const onClearAll = vi.fn();
+  const onClose = vi.fn();
   render(
     <CostCapture
       panels={panels}
@@ -32,9 +33,10 @@ const pintar = (quotes: Quotes = {}) => {
       onSet={onSet}
       onClear={onClear}
       onClearAll={onClearAll}
+      onClose={onClose}
     />,
   );
-  return { onSet, onClear, onClearAll };
+  return { onSet, onClear, onClearAll, onClose };
 };
 
 const campo = (b = marca) => screen.getByLabelText(new RegExp(`Costo por watt de ${b}`)) as HTMLInputElement;
