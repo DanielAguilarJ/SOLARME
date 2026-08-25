@@ -314,8 +314,13 @@ export default function RoofView({
           >
             <circle cx={p.x} cy={p.y} r={16} fill="transparent" />
             <g pointerEvents="none">
+              {enfocado === `m${i}` && (
+                <circle cx={p.x} cy={p.y} r={11} fill="none" stroke="#ea580c" strokeWidth={2}
+                  strokeDasharray="3 2" />
+              )}
               <circle cx={p.x} cy={p.y} r={enfocado === `m${i}` ? 6 : 3.5}
-                fill="#ffffff" stroke="#9a968e" strokeWidth={1.5} />
+                fill={enfocado === `m${i}` ? "#ea580c" : "#ffffff"}
+                stroke={enfocado === `m${i}` ? "#ea580c" : "#9a968e"} strokeWidth={1.5} />
               <line x1={p.x - 2} y1={p.y} x2={p.x + 2} y2={p.y} stroke="#6b6862" strokeWidth={1} />
               <line x1={p.x} y1={p.y - 2} x2={p.x} y2={p.y + 2} stroke="#6b6862" strokeWidth={1} />
             </g>
@@ -371,8 +376,16 @@ export default function RoofView({
             {/* blanco táctil: invisible, pero es lo que recibe el dedo. El círculo visible de
                 5 px de radio son unos 3 px reales en un teléfono, imposible de agarrar. */}
             <circle cx={p.x} cy={p.y} r={18} fill="transparent" />
+            {/* Anillo de foco. El indicador propio era pasar de 5 a 7 px de radio, y con varios
+                vértices en pantalla nadie distingue cuál tiene el foco: se quitó el contorno del
+                navegador y no se puso nada equivalente. El anillo se ve sin comparar. */}
+            {enfocado === `v${i}` && (
+              <circle cx={p.x} cy={p.y} r={12} fill="none" stroke="#ea580c" strokeWidth={2}
+                strokeDasharray="3 2" pointerEvents="none" />
+            )}
             <circle cx={p.x} cy={p.y} r={activo || enfocado === `v${i}` ? 7 : 5}
-              fill="#ffffff" stroke="#ea580c" strokeWidth={2} pointerEvents="none" />
+              fill={enfocado === `v${i}` ? "#ea580c" : "#ffffff"}
+              stroke="#ea580c" strokeWidth={2} pointerEvents="none" />
           </g>
         );
       })}
