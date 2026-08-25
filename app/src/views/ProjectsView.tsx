@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { MapPin, Plus, Trash2, SunMedium, Search, X, TriangleAlert, Download, Upload, StickyNote } from "lucide-react";
+import { MapPin, Plus, Trash2, SunMedium, Search, X, TriangleAlert, Download, Upload, StickyNote, Pencil, Copy } from "lucide-react";
 import { compute, fmt, GD_LIMIT_KW } from "../lib/solar";
 import { modulePrice } from "../lib/price";
 import { exportProjects, fusionarAjustes, importProjects, nombreArchivo } from "../lib/transfer";
@@ -19,6 +19,10 @@ interface Props {
   onStatus: (id: string, status: Project["status"]) => void;
   /** Guarda la nota de seguimiento. Sin ella la nota no se puede editar desde aquí. */
   onNota?: (id: string, nota: string) => void;
+  /** Corrige el texto del domicilio. La ciudad no cambia: de ella depende la física del cálculo. */
+  onDomicilio?: (id: string, address: string) => void;
+  /** Duplica el proyecto para trabajar un segundo escenario sobre el mismo techo. */
+  onDuplicar?: (id: string) => void;
   onNew: () => void;
   /** Añade los proyectos de un respaldo. Sin este manejador no se ofrece restaurar. */
   onImport?: (entrantes: Project[]) => { agregados: number; repetidos: number };
@@ -72,11 +76,13 @@ function tieneAjustes(a: { negocio: { nombre: string; telefono: string; correo: 
   );
 }
 
-export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onNew, onImport, onNota }: Props) {
+export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onNew, onImport, onNota, onDomicilio, onDuplicar }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [aviso, setAviso] = useState<{ texto: string; mal?: boolean } | null>(null);
   /** Id del proyecto cuya nota se está editando. Uno a la vez: la fila crece y dos a la vez marean. */
   const [editandoNota, setEditandoNota] = useState<string | null>(null);
+  /** Id del proyecto cuyo domicilio se está corrigiendo. */
+  const [editandoDir, setEditandoDir] = useState<string | null>(null);
 
   /** Descarga la cartera como archivo. Se usa un blob local y se revoca la URL: nada sale a
    * la red, el archivo lo guarda el propio navegador donde el instalador decida. */
@@ -212,6 +218,9 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
 
   // Los totales son de lo que se ve, no de todo: si filtras por "ganados", la suma
   // que importa es la de los ganados.
+  /** Domicilios distintos entre los visibles: dos escenarios del mismo techo cuentan uno. */
+  const domicilios = new Set(visible.map(({ p }) => `${p.address}|${p.city}`.toLowerCase())).size;
+
   const totals = useMemo(
     () => visible.reduce((a, { r }) => ({ kwp: a.kwp + r.kwp, save: a.save + r.save }), { kwp: 0, save: 0 }),
     [visible]
@@ -288,7 +297,17 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
           <p className="mt-1 text-sm text-muted">
             <b className="font-medium text-ink tabular-nums">{totals.kwp.toFixed(1)} kWp</b>
             {" en "}
-            {visible.length} {visible.length === 1 ? "análisis" : "análisis"} · ahorro anual conjunto{" "}
+            {visible.length} análisis
+            {/* Desde que se pueden duplicar proyectos para comparar escenarios, dos filas pueden
+                ser el MISMO techo, y entonces el ahorro conjunto cuenta dos veces al mismo cliente.
+                No se cambia la suma —es el total de los análisis, y así se llama—, pero se dice
+                cuántos domicilios distintos hay para que nadie lea dos veces el mismo dinero. */}
+            {domicilios < visible.length && (
+              <span className="text-faint">
+                {" "}de {domicilios} {domicilios === 1 ? "domicilio" : "domicilios"}
+              </span>
+            )}
+            {" · ahorro anual conjunto "}
             <b className="font-medium text-ink tabular-nums">${fmt(Math.round(totals.save))}</b>
           </p>
         </div>
@@ -423,7 +442,33 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
                       <div className="flex items-center gap-2">
                         <MapPin size={13} className="shrink-0 text-faint" />
                         <div className="min-w-0">
-                          <p className="truncate font-medium">{p.address}</p>
+                          {/* El domicilio se puede corregir aquí. Antes un error de tecleo obligaba
+                              a borrar el proyecto y rehacer el trazo del techo, y ese texto es el
+                              que sale impreso en la propuesta que lee el cliente.
+                              La CIUDAD no se toca: de ella salen el rendimiento medido, las
+                              temperaturas y por tanto las series. Cambiarla aquí dejaría la física
+                              de una ciudad con el nombre de otra. */}
+                          {onDomicilio && editandoDir === p.id ? (
+                            <input
+                              autoFocus
+                              defaultValue={p.address}
+                              maxLength={200}
+                              aria-label={`Domicilio de ${p.address}`}
+                              onClick={(e) => e.stopPropagation()}
+                              onBlur={(e) => {
+                                onDomicilio(p.id, e.target.value);
+                                setEditandoDir(null);
+                              }}
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                                if (e.key === "Escape") setEditandoDir(null);
+                                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                              }}
+                              className="w-full rounded border border-line bg-paper px-1.5 py-0.5 text-sm font-medium outline-none focus:border-ink"
+                            />
+                          ) : (
+                            <p className="truncate font-medium">{p.address}</p>
+                          )}
                           <p className="truncate text-xs text-faint">{p.city}</p>
                           {/* En móvil se ocultan las columnas SISTEMA y AHORRO para que la tabla
                               no se desborde ni recorte el ahorro; sus dos datos se pliegan aquí. */}
@@ -535,13 +580,35 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
                       {relativeDate(p.createdAt)}
                     </td>
                     <td className="px-2 py-3">
-                      <button
-                        aria-label="Eliminar proyecto"
-                        onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
-                        className="grid h-7 w-7 place-items-center rounded text-faint opacity-0 transition hover:bg-line hover:text-ink group-hover:opacity-100 focus:opacity-100"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {/* Las acciones aparecen al pasar por encima en escritorio, y siempre en
+                          teléfono: allí no hay «pasar por encima» y quedarían inalcanzables. */}
+                      <div className="flex items-center gap-0.5 opacity-100 transition md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
+                        {onDomicilio && (
+                          <button
+                            aria-label={`Corregir el domicilio de ${p.address}`}
+                            onClick={(e) => { e.stopPropagation(); setEditandoDir(p.id); }}
+                            className="grid h-7 w-7 place-items-center rounded text-faint transition hover:bg-line hover:text-ink"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                        )}
+                        {onDuplicar && (
+                          <button
+                            aria-label={`Duplicar ${p.address}`}
+                            onClick={(e) => { e.stopPropagation(); onDuplicar(p.id); }}
+                            className="grid h-7 w-7 place-items-center rounded text-faint transition hover:bg-line hover:text-ink"
+                          >
+                            <Copy size={13} />
+                          </button>
+                        )}
+                        <button
+                          aria-label="Eliminar proyecto"
+                          onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
+                          className="grid h-7 w-7 place-items-center rounded text-faint transition hover:bg-line hover:text-ink"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

@@ -18,7 +18,7 @@ import AnalysisView from "./views/AnalysisView";
 import Catalog from "./components/Catalog";
 import Installers from "./components/Installers";
 import { AREA_INICIAL, CITIES, designForNewAddress, matchCity, cityOfProject, optTiltFor, type Design, type Panel, type ProjectType } from "./lib/solar";
-import { MAX_NOTA,
+import { duplicarProyecto, MAX_NOTA,
   addProject, removeProject, replaceProjects, newId, guardadoFallo, suscribirGuardado,
   type Project,
 } from "./lib/storage";
@@ -406,6 +406,27 @@ export default function App() {
                 const next = l.map((p) =>
                   p.id === id ? { ...p, ...(limpia ? { nota: limpia } : { nota: undefined }) } : p,
                 );
+                replaceProjects(next);
+                return next;
+              })
+            }
+            onDomicilio={(id, address) =>
+              setProjects((l) => {
+                // Solo el texto del domicilio. La ciudad y su física quedan como estaban: de ahí
+                // salen el rendimiento medido y las temperaturas del dimensionado, y cambiarlas por
+                // un texto escrito a mano sería peor que el error de tecleo que se está corrigiendo.
+                const limpio = address.trim().slice(0, 200);
+                if (!limpio) return l;
+                const next = l.map((p) => (p.id === id ? { ...p, address: limpio } : p));
+                replaceProjects(next);
+                return next;
+              })
+            }
+            onDuplicar={(id) =>
+              setProjects((l) => {
+                const original = l.find((p) => p.id === id);
+                if (!original) return l;
+                const next = [duplicarProyecto(original, newId()), ...l];
                 replaceProjects(next);
                 return next;
               })

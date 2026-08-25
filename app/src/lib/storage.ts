@@ -20,6 +20,26 @@ export interface Project {
 /** Tope de la nota. Es un recordatorio, no un expediente, y el almacén del navegador es limitado. */
 export const MAX_NOTA = 500;
 
+/**
+ * Copia de un proyecto para trabajar un segundo escenario sobre el mismo techo.
+ *
+ * Sirve para presentar dos opciones al mismo cliente —«con 10 módulos o con 14», «Trina o Jinko»—
+ * sin rehacer el análisis desde la dirección, que además obligaba a volver a trazar el contorno.
+ *
+ * La copia arranca como BORRADOR aunque el original ya sea una propuesta entregada: es un escenario
+ * nuevo y no puede aparecer en el embudo como algo que ya se mandó. Y su nota lo dice, porque dos
+ * filas con el mismo domicilio son indistinguibles de un vistazo.
+ */
+export function duplicarProyecto(p: Project, nuevoId: string, ahora = Date.now()): Project {
+  return {
+    ...p,
+    id: nuevoId,
+    createdAt: ahora,
+    status: "borrador",
+    nota: p.nota ? `Escenario alterno · ${p.nota}`.slice(0, MAX_NOTA) : "Escenario alterno",
+  };
+}
+
 const KEY = "solarme.projects.v1";
 
 /**
