@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { MapPin, Plus, Trash2, SunMedium, Search, X, TriangleAlert, Download, Upload } from "lucide-react";
+import { MapPin, Plus, Trash2, SunMedium, Search, X, TriangleAlert, Download, Upload, StickyNote } from "lucide-react";
 import { compute, fmt, GD_LIMIT_KW } from "../lib/solar";
 import { modulePrice } from "../lib/price";
 import { exportProjects, fusionarAjustes, importProjects, nombreArchivo } from "../lib/transfer";
@@ -8,7 +8,7 @@ import { guardarBosRates, loadBosRates } from "../lib/bos";
 import { guardarQuotes, loadQuotes } from "../lib/quotes";
 import { guardarContactos, leerContactos, ordenar, type Contacto } from "../lib/contactos";
 import { matchCity } from "../lib/solar";
-import { relativeDate, type Project } from "../lib/storage";
+import { MAX_NOTA, relativeDate, type Project } from "../lib/storage";
 
 interface Props {
   projects: Project[];
@@ -17,6 +17,8 @@ interface Props {
   /** Cambia en qué punto del embudo está el proyecto. Sin esto, `status` se quedaba en
    *  «borrador» para siempre y los filtros de arriba no podían mostrar nada. */
   onStatus: (id: string, status: Project["status"]) => void;
+  /** Guarda la nota de seguimiento. Sin ella la nota no se puede editar desde aquí. */
+  onNota?: (id: string, nota: string) => void;
   onNew: () => void;
   /** Añade los proyectos de un respaldo. Sin este manejador no se ofrece restaurar. */
   onImport?: (entrantes: Project[]) => { agregados: number; repetidos: number };
@@ -70,9 +72,11 @@ function tieneAjustes(a: { negocio: { nombre: string; telefono: string; correo: 
   );
 }
 
-export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onNew, onImport }: Props) {
+export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onNew, onImport, onNota }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [aviso, setAviso] = useState<{ texto: string; mal?: boolean } | null>(null);
+  /** Id del proyecto cuya nota se está editando. Uno a la vez: la fila crece y dos a la vez marean. */
+  const [editandoNota, setEditandoNota] = useState<string | null>(null);
 
   /** Descarga la cartera como archivo. Se usa un blob local y se revoca la URL: nada sale a
    * la red, el archivo lo guarda el propio navegador donde el instalador decida. */
@@ -445,6 +449,44 @@ export default function ProjectsView({ projects, onOpen, onDelete, onStatus, onN
                               <option key={k} value={k}>{STATUS[k].label}</option>
                             ))}
                           </select>
+
+                          {/* Nota de seguimiento. Va en la celda del domicilio y no en una columna
+                              propia porque el texto es largo y variable: una columna la partiría o
+                              la truncaría en todos los anchos. Se abre al pulsarla, se guarda al
+                              salir del foco, y con Escape se cierra sin guardar. */}
+                          {onNota && (editandoNota === p.id ? (
+                            <textarea
+                              autoFocus
+                              defaultValue={p.nota ?? ""}
+                              maxLength={MAX_NOTA}
+                              aria-label={`Nota de ${p.address}`}
+                              onClick={(e) => e.stopPropagation()}
+                              onBlur={(e) => {
+                                onNota(p.id, e.target.value);
+                                setEditandoNota(null);
+                              }}
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                                if (e.key === "Escape") setEditandoNota(null);
+                              }}
+                              rows={2}
+                              placeholder="Pidió financiamiento, volver en junio…"
+                              className="mt-1.5 w-full resize-none rounded-lg border border-line bg-paper px-2 py-1.5 txt-mini leading-relaxed outline-none focus:border-ink"
+                            />
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditandoNota(p.id);
+                              }}
+                              className="mt-1.5 flex w-full items-start gap-1 rounded px-1 py-0.5 text-left txt-mini leading-relaxed text-faint transition hover:bg-line/40 hover:text-muted"
+                            >
+                              <StickyNote size={11} className="mt-0.5 shrink-0" aria-hidden />
+                              <span className="min-w-0 whitespace-normal">
+                                {p.nota ? p.nota : "Agregar una nota"}
+                              </span>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </td>

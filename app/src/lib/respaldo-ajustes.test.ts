@@ -96,6 +96,25 @@ describe("el respaldo lleva lo que el instalador capturó a mano", () => {
   });
 });
 
+describe("la nota de seguimiento viaja con el proyecto", () => {
+  it("ida y vuelta conserva la nota", () => {
+    const conNota = { ...proyecto, nota: "Pidió financiamiento a 24 meses" };
+    const r = importProjects(exportProjects([conNota], new Date(), []));
+    expect(r.proyectos[0].nota).toBe("Pidió financiamiento a 24 meses");
+  });
+
+  it("una nota vacía no ocupa lugar en el archivo", () => {
+    const r = importProjects(exportProjects([{ ...proyecto, nota: "   " }], new Date(), []));
+    expect(r.proyectos[0].nota).toBeUndefined();
+  });
+
+  it("una nota enorme se acota en vez de entrar entera al almacén", () => {
+    const larga = "x".repeat(5000);
+    const r = importProjects(exportProjects([{ ...proyecto, nota: larga }], new Date(), []));
+    expect(r.proyectos[0].nota?.length).toBe(500);
+  });
+});
+
 describe("los ajustes de un archivo son entrada no confiable", () => {
   it("un costo por watt fuera de rango se descarta sin tumbar la importación", () => {
     // 999 MXN/W metido a mano se usaría en CADA propuesta como si fuera dato del instalador

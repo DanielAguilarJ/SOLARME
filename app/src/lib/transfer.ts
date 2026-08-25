@@ -1,4 +1,4 @@
-import { loadProjects, paraGuardar, type Project } from "./storage";
+import { loadProjects, MAX_NOTA, paraGuardar, type Project } from "./storage";
 import type { Design, Panel, ProjectType } from "./solar";
 import type { Obstacle, ObstacleKind } from "./shading";
 import type { Punto } from "./polygon";
@@ -308,10 +308,16 @@ function validaProyecto(v: unknown): Project | null {
     : "borrador";
   const design = validaDiseño(p.design);
   if (!design) return null;
+  // La nota de seguimiento viaja con el proyecto: es trabajo del instalador y se pierde con el
+  // navegador igual que el resto. Se acota al mismo tope que la interfaz para que un archivo
+  // editado a mano no meta un texto de un megabyte en el almacén.
+  const nota = typeof p.nota === "string" && p.nota.trim() ? p.nota.trim().slice(0, MAX_NOTA) : undefined;
+
   return {
     id: p.id, address: p.address,
     city: esTexto(p.city) ? p.city : "",
     design, createdAt: p.createdAt, status: estado,
+    ...(nota ? { nota } : {}),
   };
 }
 

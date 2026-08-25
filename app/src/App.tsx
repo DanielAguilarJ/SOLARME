@@ -18,7 +18,7 @@ import AnalysisView from "./views/AnalysisView";
 import Catalog from "./components/Catalog";
 import Installers from "./components/Installers";
 import { AREA_INICIAL, CITIES, designForNewAddress, matchCity, cityOfProject, optTiltFor, type Design, type Panel, type ProjectType } from "./lib/solar";
-import {
+import { MAX_NOTA,
   addProject, removeProject, replaceProjects, newId, guardadoFallo, suscribirGuardado,
   type Project,
 } from "./lib/storage";
@@ -394,6 +394,18 @@ export default function App() {
               setProjects((l) => {
                 const next = l.map((p) => (p.id === id ? { ...p, status } : p));
                 // Persiste despojado, memoria completa: ver la nota de `importProjectsInto`.
+                replaceProjects(next);
+                return next;
+              })
+            }
+            onNota={(id, nota) =>
+              setProjects((l) => {
+                // Se recorta y se quita si queda vacía: guardar una cadena en blanco haría que la
+                // fila mostrara una nota que no dice nada en lugar de la invitación a escribirla.
+                const limpia = nota.trim().slice(0, MAX_NOTA);
+                const next = l.map((p) =>
+                  p.id === id ? { ...p, ...(limpia ? { nota: limpia } : { nota: undefined }) } : p,
+                );
                 replaceProjects(next);
                 return next;
               })

@@ -7,7 +7,18 @@ export interface Project {
   design: Design;
   createdAt: number;
   status: "borrador" | "propuesta" | "ganado";
+  /**
+   * Nota de seguimiento del instalador. Interna: no sale en la propuesta del cliente.
+   *
+   * El embudo de la cartera decía en qué punto está cada trabajo y no POR QUÉ. «El cliente pide
+   * financiamiento», «volver en junio cuando quiten el árbol», «pidió cotizar también la bomba»:
+   * eso es la mitad del seguimiento y acababa en una libreta de papel o en la cabeza.
+   */
+  nota?: string;
 }
+
+/** Tope de la nota. Es un recordatorio, no un expediente, y el almacén del navegador es limitado. */
+export const MAX_NOTA = 500;
 
 const KEY = "solarme.projects.v1";
 
