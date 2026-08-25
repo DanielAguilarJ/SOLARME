@@ -535,7 +535,7 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
                   {r.costs.mxnPerWp.toFixed(1)} MXN/Wp
                 </span>
               </div>
-              <ul>
+              <ul className="@container">
                 {r.costs.lines.map((l, i) => (
                   <li
                     key={l.key}
@@ -544,14 +544,23 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
                   >
                     {/* Antes con `truncate`: un concepto cortado a media palabra no se puede leer,
                         y el ancho depende de la columna, así que no hay tamaño de pantalla que lo
-                        garantice. Dos líneas siempre son legibles. */}
-                    <span className="min-w-0 flex-1 text-[13px] leading-snug">{l.label}</span>
+                        garantice. Dos líneas siempre son legibles, y `break-words` evita que una
+                        palabra que no cabe desborde su caja y se meta por debajo de la insignia
+                        «medido» —eso pasó, y se vio en la captura de 390 px, no en la de escritorio. */}
+                    <span className="min-w-0 flex-1 break-words text-[13px] leading-snug">
+                      {l.label}
+                    </span>
                     {l.origin === "medido" && (
                       <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 txt-micro font-medium text-leaf-600">
                         medido
                       </span>
                     )}
-                    <span className="w-10 shrink-0 text-right txt-mini tabular-nums text-faint">
+                    {/* En un teléfono, con el concepto, la insignia, el porcentaje y el importe en
+                        la misma línea, al concepto le quedan 82 px y «fotovoltaicos» se parte por
+                        la mitad. De los cuatro, el porcentaje es el único prescindible: se deduce
+                        del importe y del total, sigue en la propuesta impresa, y cediéndolo el
+                        concepto gana el ancho que necesita para leerse entero. */}
+                    <span className="hidden w-10 shrink-0 text-right txt-mini tabular-nums text-faint @xs:block">
                       {pctsCosto[i]}%
                     </span>
                     <span className="w-24 shrink-0 text-right text-[13px] tabular-nums">
