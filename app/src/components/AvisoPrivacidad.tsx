@@ -1,6 +1,7 @@
-import { useEffect, useSyncExternalStore } from "react";
-import { X, AlertTriangle } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { X, AlertTriangle, Trash2 } from "lucide-react";
 import { faltaParaAviso, leerNegocio, suscribirNegocio } from "../lib/negocio";
+import { borrarTodo, hayDatos, inventarioDatos, resumenDeBorrado } from "../lib/borrado";
 
 /**
  * Aviso de privacidad.
@@ -23,6 +24,11 @@ export default function AvisoPrivacidad({ onClose }: { onClose: () => void }) {
   // pantalla, este aviso tiene que reflejarlo sin recargar la aplicación.
   const negocio = useSyncExternalStore(suscribirNegocio, leerNegocio, () => leerNegocio());
   const falta = faltaParaAviso(negocio);
+
+  // El borrado va en dos pasos: el primero muestra QUÉ se va a borrar, contado del almacén. Un
+  // «¿seguro?» a secas no informa de nada, y esta es la única acción de la aplicación que no se
+  // puede deshacer. El inventario se lee al pedir la confirmación, no al abrir el aviso.
+  const [confirmando, setConfirmando] = useState<string | null>(null);
 
   /** Un dato del negocio, o el hueco marcado si todavía no está. */
   const dato = (v: string, hueco: string) => (v ? v : `[${hueco}]`);
@@ -132,6 +138,55 @@ export default function AvisoPrivacidad({ onClose }: { onClose: () => void }) {
               cancelarlos u oponerse a su uso (derechos ARCO), la solicitud se atiende en{" "}
               <b className="text-ink">{dato(contacto(negocio), "CORREO O TELÉFONO DE CONTACTO")}</b>.
             </p>
+
+            {/* La sección prometía que los datos se pueden borrar «desde la propia aplicación», y
+                eso solo se podía hacer de uno en uno. Aquí está la acción que cumple la promesa,
+                justo donde el lector la busca. */}
+            {hayDatos() && (
+              <div className="mt-3 rounded-xl border border-line bg-paper px-4 py-3">
+                {confirmando === null ? (
+                  <>
+                    <p className="txt-mini leading-relaxed text-muted">
+                      Puedes dejar este navegador sin ningún dato de SolarMe. Es irreversible, así
+                      que conviene respaldar antes desde la cartera.
+                    </p>
+                    <button
+                      onClick={() => setConfirmando(resumenDeBorrado(inventarioDatos()))}
+                      className="mt-2 flex items-center gap-1.5 rounded-lg border border-solar-600/40 px-3 py-1.5 txt-mini font-medium text-solar-600 transition hover:border-solar-600 hover:bg-solar-500/5"
+                    >
+                      <Trash2 size={12} aria-hidden /> Borrar todos mis datos de este navegador
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="txt-mini font-semibold leading-relaxed">{confirmando}</p>
+                    <p className="mt-1 txt-mini leading-relaxed text-muted">
+                      No se puede deshacer. Si tienes un respaldo, lo que borres aquí se puede volver
+                      a importar desde ese archivo.
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          borrarTodo();
+                          // Se recarga para que la interfaz no siga mostrando una cartera que ya no
+                          // existe: el estado en memoria de React sobrevive al borrado del almacén.
+                          window.location.reload();
+                        }}
+                        className="rounded-lg bg-solar-600 px-3 py-1.5 txt-mini font-medium text-white transition hover:bg-solar-700"
+                      >
+                        Sí, borrar todo
+                      </button>
+                      <button
+                        onClick={() => setConfirmando(null)}
+                        className="rounded-lg border border-line px-3 py-1.5 txt-mini font-medium text-muted transition hover:border-ink hover:text-ink"
+                      >
+                        Mejor no
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </section>
 
           <p className="border-t border-line pt-3 txt-mini text-faint">

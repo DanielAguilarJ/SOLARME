@@ -7,7 +7,7 @@
  * descripción factual verdadera y los huecos legales marcados que solo el instalador completa.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import AvisoPrivacidad from "./AvisoPrivacidad";
 import { _olvidarNegocio, guardarNegocio } from "../lib/negocio";
 
@@ -94,8 +94,7 @@ describe("el aviso de privacidad dice la verdad y marca lo que falta", () => {
     expect(txt, "el contacto ya está cubierto por el correo").not.toContain("[CORREO");
   });
 
-  it("se cierra con Escape y con la X, y se anuncia como diálogo", () => {
-    const onClose = vi.fn();
+  it("se cierra con Escape y con la X, y se anuncia como diálogo", () => {    const onClose = vi.fn();
     const { getByRole, getByLabelText } = render(<AvisoPrivacidad onClose={onClose} />);
     const dlg = getByRole("dialog");
     expect(dlg.getAttribute("aria-modal")).toBe("true");
@@ -105,5 +104,62 @@ describe("el aviso de privacidad dice la verdad y marca lo que falta", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("el borrado que el aviso promete", () => {
+  it("sin datos guardados no ofrece borrar nada", () => {
+    render(<AvisoPrivacidad onClose={() => undefined} />);
+    expect(screen.queryByText(/Borrar todos mis datos/)).toBeNull();
+  });
+
+  it("con datos, ofrece el borrado en la sección de derechos", () => {
+    localStorage.setItem("solarme.projects.v1", JSON.stringify([{ id: "a" }]));
+    render(<AvisoPrivacidad onClose={() => undefined} />);
+    expect(screen.getByText(/Borrar todos mis datos/)).toBeTruthy();
+  });
+
+  it("antes de borrar dice exactamente qué se va a perder", () => {
+    // «¿seguro?» a secas no informa de nada, y es la única acción que no se puede deshacer
+    localStorage.setItem("solarme.projects.v1", JSON.stringify([{ id: "a" }, { id: "b" }]));
+    localStorage.setItem("solarme.contactos.v1", JSON.stringify([{ id: "c1" }]));
+    render(<AvisoPrivacidad onClose={() => undefined} />);
+    fireEvent.click(screen.getByText(/Borrar todos mis datos/));
+    expect(screen.getByText(/Se borrarán 2 proyectos y 1 contacto de la libreta\./)).toBeTruthy();
+    expect(screen.getByText(/No se puede deshacer/)).toBeTruthy();
+  });
+
+  it("exige un segundo paso: el primer clic no borra", () => {
+    localStorage.setItem("solarme.projects.v1", JSON.stringify([{ id: "a" }]));
+    render(<AvisoPrivacidad onClose={() => undefined} />);
+    fireEvent.click(screen.getByText(/Borrar todos mis datos/));
+    expect(localStorage.getItem("solarme.projects.v1")).not.toBeNull();
+  });
+
+  it("«Mejor no» deja todo como estaba", () => {
+    localStorage.setItem("solarme.projects.v1", JSON.stringify([{ id: "a" }]));
+    render(<AvisoPrivacidad onClose={() => undefined} />);
+    fireEvent.click(screen.getByText(/Borrar todos mis datos/));
+    fireEvent.click(screen.getByText(/Mejor no/));
+    expect(localStorage.getItem("solarme.projects.v1")).not.toBeNull();
+    expect(screen.getByText(/Borrar todos mis datos/)).toBeTruthy();
+  });
+
+  it("confirmando, borra lo de la aplicación y respeta lo ajeno", () => {
+    localStorage.setItem("solarme.projects.v1", JSON.stringify([{ id: "a" }]));
+    localStorage.setItem("otra-app.sesion", "no me toques");
+    // recargar no existe en el entorno de prueba: se sustituye para poder comprobar el borrado
+    const recarga = vi.fn();
+    Object.defineProperty(window, "location", {
+      value: { ...window.location, reload: recarga },
+      writable: true,
+    });
+    render(<AvisoPrivacidad onClose={() => undefined} />);
+    fireEvent.click(screen.getByText(/Borrar todos mis datos/));
+    fireEvent.click(screen.getByText(/Sí, borrar todo/));
+    expect(localStorage.getItem("solarme.projects.v1")).toBeNull();
+    expect(localStorage.getItem("otra-app.sesion")).toBe("no me toques");
+    // y recarga, o la interfaz seguiría mostrando una cartera que ya no existe
+    expect(recarga).toHaveBeenCalled();
   });
 });
