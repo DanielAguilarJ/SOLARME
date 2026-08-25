@@ -1,5 +1,6 @@
 import { FUENTE_FISICA, RESUMEN } from "./site";
 import { periodoEnAnios } from "./tiempo";
+import { NEGOCIO_VACIO, tieneNegocio, type Negocio } from "./negocio";
 import { porcentajesEnteros } from "./capex";
 import type { Contacto } from "./contactos";
 import { desconectadorCC, desconectadorCA, unifilar, nodosIncompletos } from "./desconexion";
@@ -91,7 +92,15 @@ export function buildProposal(
    * basado en los costos reales del instalador es una cotización, y uno basado en una referencia
    * nacional es un orden de magnitud.
    */
-  bosPropio = false
+  bosPropio = false,
+  /**
+   * Los datos del negocio que entrega la propuesta.
+   *
+   * Sin esto el documento salía con el nombre de SolarMe en la cabecera y nada del instalador: el
+   * cliente se quedaba con un papel impecable y sin saber a quién llamar, y quien hizo el trabajo
+   * aparecía como intermediario de una herramienta. Es el documento con el que se cierra una venta.
+   */
+  negocio: Negocio = NEGOCIO_VACIO
 ): string {
   // Se resuelve por id contra la libreta actual. Si el contacto se borró, el id queda colgando y
   // aquí sale `undefined`: el documento dice que falta la firma en vez de imprimir un espacio.
@@ -109,7 +118,10 @@ export function buildProposal(
   const row = (k: string, v: string) =>
     `<tr><td>${k}</td><td>${v}</td></tr>`;
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">
-<title>Propuesta ${folio} · SolarMe</title>
+<!-- El título es el nombre con el que el navegador guarda el PDF: si dice «SolarMe», el
+     cliente archiva la propuesta con el nombre de una herramienta que no conoce en vez del
+     nombre de quien se la entregó. -->
+<title>Propuesta ${folio} · ${esc(negocio.nombre || "SolarMe")}</title>
 <style>
   @page{margin:16mm}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -117,6 +129,8 @@ export function buildProposal(
   .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #ea580c;padding-bottom:14px}
   .brand{font:600 26px Georgia,serif;color:#ea580c}
   .meta{text-align:right;font-size:12px;color:#6b6862}
+  .contacto{font-size:12px;color:#3a3a35;margin-top:5px;line-height:1.5}
+  .porSolarMe{font-size:11px;color:#8a867e;margin-top:3px}
   .who{margin-top:18px;color:#3a3a35}
   .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
   .card{border:1px solid #ece9e3;border-radius:12px;padding:18px}
@@ -139,7 +153,24 @@ export function buildProposal(
   }
 </style></head><body>
   <div class="head">
-    <div><div class="brand">☀ SolarMe</div><div style="color:#6b6862">Propuesta de instalación solar</div></div>
+    <div>
+      ${(() => {
+        // Con los datos del negocio, la marca de la cabecera es SUYA y SolarMe pasa a una línea
+        // pequeña debajo: quien entrega el documento es el instalador, no la herramienta con la
+        // que lo hizo. Sin datos se mantiene la marca de la herramienta, que es la verdad de ese
+        // caso: nadie ha dicho todavía quién entrega esto.
+        if (!tieneNegocio(negocio)) {
+          return `<div class="brand">☀ SolarMe</div>
+                  <div style="color:#6b6862">Propuesta de instalación solar</div>`;
+        }
+        const contacto = [negocio.telefono, negocio.correo].filter(Boolean).map(esc).join(" · ");
+        return `<div class="brand">${esc(negocio.nombre || "Propuesta de instalación solar")}</div>
+                <div style="color:#6b6862">Propuesta de instalación solar</div>
+                ${contacto ? `<div class="contacto">${contacto}</div>` : ""}
+                ${negocio.registro ? `<div class="contacto">Registro ${esc(negocio.registro)}</div>` : ""}
+                <div class="porSolarMe">Cálculo hecho con SolarMe</div>`;
+      })()}
+    </div>
     <div class="meta">${hoy}<br>Folio ${folio}</div>
   </div>
   <p class="who"><b>Domicilio:</b> ${esc(domicilio(address, city))}<br>
@@ -216,7 +247,8 @@ export function buildProposal(
          adecuado para decidir si el proyecto tiene sentido, no una cotización cerrada.`}
     ${!r.costs.inBand
       ? `<b>Atención:</b> ${r.costs.mxnPerWp.toFixed(1)} MXN/Wp queda fuera de la banda de
-         mercado de sistemas llave en mano (15-28 MXN/Wp). Revisa los costos antes de cotizar.`
+         mercado de sistemas llave en mano (15-28 MXN/Wp), de modo que el total conviene
+         revisarse antes de tomarlo como cerrado.`
       : ""}
   </p>
   ${r.surplus > 0 ? `<p class="note"><b>Nota sobre el excedente.</b> El sistema produce
@@ -323,13 +355,12 @@ export function buildProposal(
     ? `, registro <strong>${esc(responsable.registro)}</strong>` : ""}.
   ${responsable.telefono ? `Teléfono ${esc(responsable.telefono)}. ` : ""}Firma el cálculo eléctrico de
   este documento y la conformidad de la instalación.</p>
-  ${!responsable.registro ? `<p class="note">Sin registro capturado en la libreta: anótalo antes de
-  presentar el trámite.</p>` : ""}
+  ${!responsable.registro ? `<p class="note">Su número de registro queda por anotar; hace falta
+  para presentar el trámite.</p>` : ""}
   ` : `
   <h2>Responsable de la instalación</h2>
   <p class="note">Sin asignar. El cálculo eléctrico y la lista de trámites de este documento
-  necesitan la firma de un responsable con registro: asígnalo desde la libreta de la obra antes de
-  entregarlo.</p>
+  necesitan la firma de un responsable con registro, que se asigna antes de la entrega.</p>
   `}
 
   ${r.circuito?.conductor.calibre && d.site ? `
@@ -388,6 +419,10 @@ export function buildProposal(
   esta cifra puede desviarse hasta ${RESUMEN.errorDelPromedio.toFixed(0)} % en cualquier dirección.
   Antes de comprometer una producción conviene medir el sitio.</p>
   `}
+
+  ${tieneNegocio(negocio) ? `<p class="foot"><b>Entrega esta propuesta:</b>
+  ${esc(negocio.nombre)}${negocio.domicilio ? `, ${esc(negocio.domicilio)}` : ""}.
+  ${[negocio.telefono, negocio.correo].filter(Boolean).map(esc).join(" · ")}</p>` : ""}
 
   <p class="foot">Estimación generada por SolarMe con modelo físico (rendimiento medido por
   ubicación, orientación, pérdidas y factor de emisión de México). Los valores finales se confirman

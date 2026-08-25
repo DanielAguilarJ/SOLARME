@@ -29,9 +29,9 @@ function pie(): string {
   return aviso.parentElement!.textContent ?? "";
 }
 
-function montar(projectCount = 1, onNavigate = () => {}, onAviso = () => {}) {
+function montar(projectCount = 1, onNavigate = () => {}, onAviso = () => {}, onNegocio = () => {}) {
   return render(
-    <Sidebar view="inicio" onNavigate={onNavigate} onNew={() => {}} projectCount={projectCount} onAviso={onAviso} />,
+    <Sidebar view="inicio" onNavigate={onNavigate} onNew={() => {}} projectCount={projectCount} onAviso={onAviso} onNegocio={onNegocio} />,
   );
 }
 

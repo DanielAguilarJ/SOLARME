@@ -294,7 +294,11 @@ describe("la propuesta nombra a quien firma", () => {
   it("un responsable sin registro se acepta pero se advierte", () => {
     const out = html(conFirma(), [{ ...ana, registro: undefined }]);
     expect(out).toContain("Ing. Ana Ruiz");
-    expect(out).toContain("Sin registro capturado");
+    // la advertencia sigue, sin la frase vieja «Sin registro capturado en la libreta: anótalo…»,
+    // que le daba una orden al instalador y le contaba al cliente cómo funciona la herramienta
+    expect(out).toMatch(/registro queda por anotar/);
+    expect(out).toMatch(/para presentar el trámite/);
+    expect(out).not.toMatch(/en la libreta/);
   });
 
   it("sin libreta la propuesta sigue saliendo, declarando la ausencia", () => {
@@ -360,8 +364,7 @@ describe("la propuesta trae el unifilar y los medios de desconexión", () => {
     }
   });
 
-  it("no usa términos del oficio en inglés", () => {
-    // «Pasillo antisombra 0.74 m (pitch 2.47 m)»: el cliente que recibe esto no sabe qué es un
+  it("no usa términos del oficio en inglés", () => {    // «Pasillo antisombra 0.74 m (pitch 2.47 m)»: el cliente que recibe esto no sabe qué es un
     // pitch, y la palabra en español existe y es exacta. Se encontró mirando el documento impreso.
     const out = html(base);
     for (const termino of ["pitch", "string", "layout", "array", "derating", "tilt", "azimuth"]) {
@@ -668,5 +671,90 @@ describe("el documento se puede leer y se puede imprimir", () => {
     // Comprobado: cambiar la regla de `tr` a `auto` no la tumbaba.
     expect(c).toMatch(/h2\{[^}]*break-after:avoid/);
     expect(c).toMatch(/(^|[,{;\s])tr\s*,[^{]*\{[^}]*break-inside:avoid/m);
+  });
+});
+
+/**
+ * De quién es el documento.
+ *
+ * La propuesta salía con «☀ SolarMe» en la cabecera y ningún dato del instalador. El cliente se
+ * quedaba con un papel impecable y sin saber a quién llamar, y quien había hecho el trabajo
+ * aparecía como intermediario de una herramienta, en el único documento con el que se cierra una
+ * venta. Los datos se piden una vez y los usa también el aviso de privacidad, que por ley tiene que
+ * decir quién responde por los datos del cliente.
+ */
+describe("la propuesta es del instalador, no de la herramienta", () => {
+  const negocio = {
+    nombre: "Solar del Bajío S.A. de C.V.",
+    domicilio: "Av. López Mateos 1200, León",
+    telefono: "477 123 4567",
+    correo: "contacto@solardelbajio.mx",
+    registro: "CFE-GD-2024-0192",
+  };
+
+  const conNegocio = (n = negocio) =>
+    buildProposal("Av. Chapultepec 100", "Guadalajara", base, compute(base), [], false, n);
+
+  it("la marca de la cabecera es la del negocio", () => {
+    const out = conNegocio();
+    expect(out).toMatch(/class="brand">Solar del Bajío/);
+  });
+
+  it("imprime el teléfono, el correo y el registro donde el cliente los busca", () => {
+    const out = conNegocio();
+    expect(out).toContain("477 123 4567");
+    expect(out).toContain("contacto@solardelbajio.mx");
+    expect(out).toContain("CFE-GD-2024-0192");
+  });
+
+  it("cierra diciendo quién entrega la propuesta, con domicilio", () => {
+    const out = conNegocio();
+    expect(out).toMatch(/Entrega esta propuesta:/);
+    expect(out).toContain("Av. López Mateos 1200, León");
+  });
+
+  it("SolarMe queda como la herramienta del cálculo, no como quien entrega", () => {
+    const out = conNegocio();
+    expect(out).toMatch(/Cálculo hecho con SolarMe/);
+    expect(out, "la marca grande ya no es de la herramienta").not.toMatch(/class="brand">☀ SolarMe/);
+  });
+
+  it("sin datos del negocio no finge una identidad", () => {
+    // es la verdad de ese caso: nadie ha dicho todavía quién entrega el documento
+    const out = buildProposal("Av. Chapultepec 100", "Guadalajara", base, compute(base));
+    expect(out).toMatch(/class="brand">☀ SolarMe/);
+    expect(out).not.toMatch(/Entrega esta propuesta/);
+  });
+
+  it("con solo el nombre no imprime líneas de contacto vacías", () => {
+    const out = conNegocio({ nombre: "Solar Norte", domicilio: "", telefono: "", correo: "", registro: "" });
+    expect(out).toMatch(/class="brand">Solar Norte/);
+    expect(out, "no debe quedar un separador suelto").not.toMatch(/class="contacto"><\/div>/);
+    expect(out).not.toMatch(/Registro <\/div>/);
+  });
+
+  it("escapa lo que el instalador escribió: un respaldo importado puede traer código", () => {
+    const out = conNegocio({
+      ...negocio,
+      nombre: '<img src=x onerror="alert(1)">',
+    });
+    expect(out).not.toContain('<img src=x onerror="alert(1)">');
+    expect(out).toContain("&lt;img");
+  });
+
+  it("el título del documento lleva el negocio: es el nombre del PDF que guarda el cliente", () => {
+    expect(conNegocio()).toMatch(/<title>Propuesta SM-\d+ · Solar del Bajío S\.A\. de C\.V\.<\/title>/);
+    // sin negocio, el título se queda con la herramienta, que es lo único que se puede afirmar
+    const sinNegocio = buildProposal("Av. Chapultepec 100", "Guadalajara", base, compute(base));
+    expect(sinNegocio).toMatch(/<title>Propuesta SM-\d+ · SolarMe<\/title>/);
+  });
+
+  it("no le habla al instalador ni nombra partes de la aplicación", () => {
+    // dos frases quedaban: «Revisa los costos antes de cotizar» y «asígnalo desde la libreta de la
+    // obra», que además le contaba al cliente cómo se usa la herramienta por dentro
+    const out = conNegocio();
+    for (const frase of [/Revisa los costos/, /desde la libreta/, /anótalo antes/]) {
+      expect(out, `sobra en el documento del cliente: ${frase}`).not.toMatch(frase);
+    }
   });
 });

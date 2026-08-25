@@ -16,6 +16,7 @@ const props = {
   onNavigate: vi.fn(),
   onNew: vi.fn(),
   onAviso: vi.fn(),
+  onNegocio: vi.fn(),
   projectCount: 0,
 };
 

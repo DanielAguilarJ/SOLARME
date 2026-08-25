@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Plus, LayoutGrid, PanelsTopLeft, Users, MapPin, CornerDownLeft, ShieldCheck } from "lucide-react";
+import { Search, Plus, LayoutGrid, PanelsTopLeft, Users, MapPin, CornerDownLeft, ShieldCheck , Building2} from "lucide-react";
 import type { ViewKey } from "./shell/Sidebar";
 import type { Project } from "../lib/storage";
 
@@ -11,11 +11,12 @@ interface Props {
   onNew: () => void;
   onOpenProject: (p: Project) => void;
   onAviso: () => void;
+  onNegocio: () => void;
 }
 
 interface Item { id: string; label: string; hint?: string; icon: React.ReactNode; run: () => void }
 
-export default function CommandPalette({ open, onClose, projects, onNavigate, onNew, onOpenProject, onAviso }: Props) {
+export default function CommandPalette({ open, onClose, projects, onNavigate, onNew, onOpenProject, onAviso, onNegocio }: Props) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,6 +27,7 @@ export default function CommandPalette({ open, onClose, projects, onNavigate, on
       { id: "v-proj", label: "Ir a Proyectos", hint: "vista", icon: <LayoutGrid size={15} />, run: () => onNavigate("proyectos") },
       { id: "v-pan", label: "Ir a Catálogo de módulos", hint: "vista", icon: <PanelsTopLeft size={15} />, run: () => onNavigate("paneles") },
       { id: "v-inst", label: "Ir a la libreta de la obra", hint: "vista", icon: <Users size={15} />, run: () => onNavigate("instaladores") },
+      { id: "negocio", label: "Mi negocio", hint: "acción", icon: <Building2 size={15} />, run: onNegocio },
       { id: "aviso", label: "Aviso de privacidad", hint: "acción", icon: <ShieldCheck size={15} />, run: onAviso },
       ...projects.slice(0, 8).map<Item>((p) => ({
         id: p.id, label: p.address, hint: p.city, icon: <MapPin size={15} />, run: () => onOpenProject(p),
@@ -34,7 +36,7 @@ export default function CommandPalette({ open, onClose, projects, onNavigate, on
     const needle = q.trim().toLowerCase();
     if (!needle) return base;
     return base.filter((i) => (i.label + " " + (i.hint ?? "")).toLowerCase().includes(needle));
-  }, [q, projects, onNavigate, onNew, onOpenProject, onAviso]);
+  }, [q, projects, onNavigate, onNew, onOpenProject, onAviso, onNegocio]);
 
   useEffect(() => {
     if (!open) return;

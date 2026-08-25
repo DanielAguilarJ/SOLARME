@@ -9,6 +9,7 @@ import { cargarCarteraSegura, fusionar } from "./lib/transfer";
 import { hayConexion, observarConexion } from "./lib/offline";
 import CommandPalette from "./components/CommandPalette";
 import AvisoPrivacidad from "./components/AvisoPrivacidad";
+import MiNegocio from "./components/MiNegocio";
 import MapaUbicacion from "./components/MapaUbicacion";
 import { nearestSite } from "./lib/site";
 import ProjectsView from "./views/ProjectsView";
@@ -82,6 +83,8 @@ export default function App() {
   const [dialog, setDialog] = useState(false);
   const [palette, setPalette] = useState(false);
   const [aviso, setAviso] = useState(false);
+  // Los datos del negocio: los usa la propuesta y completan el aviso de privacidad.
+  const [negocio, setNegocio] = useState(false);
   const [ajustando, setAjustando] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -293,7 +296,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar view={view} onNavigate={setView} onNew={() => setDialog(true)} projectCount={projects.length} onAviso={() => setAviso(true)} />
+      <Sidebar view={view} onNavigate={setView} onNew={() => setDialog(true)} projectCount={projects.length} onAviso={() => setAviso(true)} onNegocio={() => setNegocio(true)} />
 
       <main className="min-w-0 flex-1 pb-16 md:pb-0">
         {/* Proyectos que no se pudieron leer. Es un aviso de una sola vez y se puede cerrar,
@@ -444,6 +447,7 @@ export default function App() {
 
       <NewAnalysisDialog open={dialog} onClose={() => setDialog(false)} onSubmit={startAnalysis} />
       {aviso && <AvisoPrivacidad onClose={() => setAviso(false)} />}
+      {negocio && <MiNegocio onClose={() => setNegocio(false)} />}
       {ajustando && (
         <MapaUbicacion
           lat={design.lat}
@@ -461,6 +465,7 @@ export default function App() {
         onNew={() => setDialog(true)}
         onOpenProject={openProject}
         onAviso={() => setAviso(true)}
+        onNegocio={() => setNegocio(true)}
       />
     </div>
   );

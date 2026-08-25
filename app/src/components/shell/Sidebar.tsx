@@ -10,6 +10,7 @@ interface Props {
   onNavigate: (v: ViewKey) => void;
   onNew: () => void;
   onAviso: () => void;
+  onNegocio: () => void;
   projectCount: number;
 }
 
@@ -57,10 +58,11 @@ function Instalar() {
  * El patrón viene de los pies de Proton y Skiff: estado del almacenamiento y una sola acción, no una
  * identidad.
  */
-function Almacen({ projectCount, onNavigate, onAviso }: {
+function Almacen({ projectCount, onNavigate, onAviso, onNegocio }: {
   projectCount: number;
   onNavigate: (v: ViewKey) => void;
   onAviso: () => void;
+  onNegocio: () => void;
 }) {
   // La barra no se desmonta nunca, así que leer al montar la dejaba atrasada en silencio cada vez
   // que se editaba la libreta. Ahora se suscribe: se entera del cambio en esta pestaña y en otras.
@@ -89,6 +91,12 @@ function Almacen({ projectCount, onNavigate, onAviso }: {
         Respaldar en un archivo
       </button>
       <button
+        onClick={onNegocio}
+        className="mt-1 block rounded px-1 py-1 txt-micro text-faint underline decoration-line underline-offset-2 transition hover:bg-paper hover:text-muted"
+      >
+        Mi negocio
+      </button>
+      <button
         onClick={onAviso}
         className="mt-1 block rounded px-1 py-1 txt-micro text-faint underline decoration-line underline-offset-2 transition hover:bg-paper hover:text-muted"
       >
@@ -98,7 +106,7 @@ function Almacen({ projectCount, onNavigate, onAviso }: {
   );
 }
 
-export default function Sidebar({ view, onNavigate, onNew, projectCount, onAviso }: Props) {
+export default function Sidebar({ view, onNavigate, onNew, projectCount, onAviso, onNegocio }: Props) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-card md:flex">
       <div className="flex h-14 items-center gap-2 px-5">
@@ -137,7 +145,7 @@ export default function Sidebar({ view, onNavigate, onNew, projectCount, onAviso
       </nav>
 
       <div className="border-t border-line p-3">
-        <Almacen projectCount={projectCount} onNavigate={onNavigate} onAviso={onAviso} />
+        <Almacen projectCount={projectCount} onNavigate={onNavigate} onAviso={onAviso} onNegocio={onNegocio} />
         <Instalar />
         <p className="mt-2 flex items-center gap-1 px-2.5 txt-mini text-faint">
           <Command size={11} /> K para buscar

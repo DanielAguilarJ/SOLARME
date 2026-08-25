@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { leerNegocio } from "../lib/negocio";
 import {
   Zap, PiggyBank, TrendingUp, Leaf, Compass, Ruler, SunMedium, CloudSun,
   FileDown, Save, Check, MapPinned} from "lucide-react";
@@ -112,7 +113,7 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
   function propuesta() {
     const w = window.open("", "_blank", "width=820,height=980");
     if (!w) {
-      const html = buildProposal(address, city, d, r, contactos, isOwnBos(bosRates, d.type));
+      const html = buildProposal(address, city, d, r, contactos, isOwnBos(bosRates, d.type), leerNegocio());
       setPropuestaBloqueada(URL.createObjectURL(new Blob([html], { type: "text/html" })));
       return;
     }
@@ -120,7 +121,7 @@ export default function AnalysisView({ address, city, design: d, onChange, onSav
     // El documento tiene que decir si el costo por watt es el del instalador o la referencia
     // nacional: `bosFor` siempre devuelve un número, así que el dato no se puede deducir del
     // diseño y hay que pasarlo.
-    w.document.write(buildProposal(address, city, d, r, contactos, isOwnBos(bosRates, d.type)));
+    w.document.write(buildProposal(address, city, d, r, contactos, isOwnBos(bosRates, d.type), leerNegocio()));
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 350);
