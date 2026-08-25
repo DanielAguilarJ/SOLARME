@@ -20,7 +20,8 @@ series, las protecciones y una propuesta lista para imprimir y entregar al clien
 | **Dimensiona lo eléctrico** | Series por voltaje en frío, calibre del conductor con corrección por temperatura y agrupamiento, protección contra sobrecorriente y desconectador. Cita el NEC. |
 | **Calcula el dinero** | Tarifa del recibo, ahorro mensual, costo del sistema y retorno. Lo que es estimación lo dice en la propia cifra. |
 | **Emite la propuesta** | Un documento imprimible con el domicilio, el arreglo, la producción mes a mes y el desglose. |
-| **Funciona sin señal** | Una vez cargada, la física, el catálogo y los proyectos viven en el dispositivo. Se instala en el teléfono desde el navegador y abre a pantalla completa. |
+| **Sale con tu nombre** | La propuesta lleva la razón social, el teléfono, el correo y el registro del instalador, y con esos mismos datos el aviso de privacidad queda completo. Se piden una vez. |
+| **Funciona sin señal** | Una vez cargada, la física, el catálogo y los proyectos viven en el dispositivo. Se instala en el teléfono desde la propia aplicación y abre a pantalla completa, sin barra de direcciones. |
 
 ## Qué **no** hace todavía
 
@@ -31,8 +32,9 @@ Vale la pena decirlo antes de que alguien lo descubra usándola:
   ella dibuja una cuadrícula, lo dice, y deja ajustar el punto igual.
 - **No hay servidor ni cuenta de usuario.** Todo se guarda en el navegador de quien la usa. Hay
   respaldo a archivo e importación para pasar la cartera de un dispositivo a otro.
-- **El aviso de privacidad está redactado pero incompleto**: le faltan la razón social, el
-  domicilio y el contacto del negocio, y lo señala en pantalla.
+- **El aviso de privacidad se completa con los datos del negocio**, que la aplicación no puede
+  saber por su cuenta. Mientras falten, lo dice en pantalla y marca los huecos; en cuanto se
+  ponen, queda entregable. Conviene revisar el texto con quien lleve los temas legales.
 
 ## Cómo se corre
 
@@ -43,7 +45,7 @@ npm run dev     # desarrollo
 npm run build   # lint + tipos + pruebas + compilación
 ```
 
-`npm run build` corre oxlint, `tsc`, más de 900 pruebas y luego compila. Es el mismo comando que
+`npm run build` corre oxlint, `tsc`, más de mil pruebas y luego compila. Es el mismo comando que
 ejecuta la publicación, así que un cambio que rompa algo no llega a producción.
 
 ## Cómo está organizado
