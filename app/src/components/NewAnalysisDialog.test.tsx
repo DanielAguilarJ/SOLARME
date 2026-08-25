@@ -13,9 +13,11 @@ import NewAnalysisDialog from "./NewAnalysisDialog";
 
 afterEach(cleanup);
 
-const abrir = (over: { onSubmit?: () => void; onClose?: () => void } = {}) => {
-  const onSubmit = over.onSubmit ?? vi.fn();
-  const onClose = over.onClose ?? vi.fn();
+const abrir = () => {
+  // los espías se crean aquí y se devuelven tipados: si el ayudante aceptara manejadores de fuera,
+  // su tipo sería la unión de espía y función y las pruebas no podrían leer `mock.calls`
+  const onSubmit = vi.fn<(address: string) => void>();
+  const onClose = vi.fn<() => void>();
   const utils = render(<NewAnalysisDialog open onClose={onClose} onSubmit={onSubmit} />);
   return { ...utils, onSubmit, onClose };
 };
