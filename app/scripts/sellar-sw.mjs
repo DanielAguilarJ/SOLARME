@@ -57,3 +57,37 @@ if (sw === antesVersion) {
 
 writeFileSync(swPath, sw, "utf8");
 console.log(`sellar-sw: ${version} · precache de ${precache.length} rutas`);
+
+/*
+ * Segundo trabajo de este script: las etiquetas de vista previa al compartir.
+ *
+ * Vite reescribe con la base el `href` de un `<link>` y el `src` de un `<script>`, pero NO el
+ * atributo `content` de una etiqueta `<meta>`. La imagen de vista previa quedaba por tanto apuntando
+ * a «/vista-previa.png», que en la publicación —servida en un subdirectorio— es la raíz del dominio
+ * y da 404. Es el mismo defecto de clase que el registro del trabajador de servicio en «/sw.js», que
+ * ya nos costó el funcionamiento sin señal una vez.
+ *
+ * Y además: los lectores de enlaces exigen una dirección ABSOLUTA para la imagen. Cuando el entorno
+ * declara `SITE_URL` —el flujo de publicación lo hace— se escribe absoluta; sin ella se escribe con
+ * la base, que es lo correcto que se puede saber sin conocer el dominio.
+ */
+const sitio = process.env.SITE_URL?.replace(/\/+$/, "");
+const imagen = sitio ? `${sitio}/vista-previa.png` : `${base}vista-previa.png`;
+const direccion = sitio ? `${sitio}/` : base;
+
+const htmlPath = new URL("index.html", dist);
+let htmlSellado = readFileSync(htmlPath, "utf8");
+const antesHtml = htmlSellado;
+htmlSellado = htmlSellado.replace(
+  /(<meta property="og:image" content=")[^"]*(")/,
+  `$1${imagen}$2`,
+);
+htmlSellado = htmlSellado.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${direccion}$2`);
+
+if (htmlSellado === antesHtml) {
+  console.error("sellar-sw: no encontré las etiquetas de vista previa; ¿cambió index.html?");
+  process.exit(1);
+}
+
+writeFileSync(htmlPath, htmlSellado, "utf8");
+console.log(`sellar-sw: vista previa en ${imagen}${sitio ? "" : " (sin SITE_URL: ruta relativa a la base)"}`);

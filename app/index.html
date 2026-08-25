@@ -17,6 +17,40 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Color de la barra del navegador en móvil, que es donde se usa esto en una azotea. -->
     <meta name="theme-color" content="#fbfaf8" />
+    <!-- El manifiesto es lo que faltaba para que esto se pueda INSTALAR. La aplicación ya guarda
+         todo en el dispositivo y ya funciona sin señal, pero sin manifiesto el navegador del
+         teléfono no ofrece «añadir a la pantalla de inicio»: el instalador tenía que abrirla
+         escribiendo la dirección, y quedaba dentro de una pestaña con la barra de direcciones
+         comiéndose una franja de una pantalla que en una azotea se usa a pleno sol.
+         Sus rutas son RELATIVAS a propósito: el mismo archivo tiene que valer servido en la raíz
+         y servido en un subdirectorio. Una ruta absoluta ya nos costó el funcionamiento sin
+         señal una vez, cuando el trabajador de servicio se registraba en «/sw.js». -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- iOS ignora los iconos del manifiesto para la pantalla de inicio: usa este PNG. Sin él
+         Safari pone una captura de la página, que a ese tamaño es un rectángulo ilegible. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="SolarMe" />
+    <!-- Pantalla completa al abrir desde el icono. La primera es la que entiende Safari, que no
+         lee `display: standalone` del manifiesto; la segunda es la forma estándar. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Vista previa al compartir el enlace. Este producto se pasa de instalador a instalador por
+         WhatsApp, y un enlace sin estas etiquetas se pega como una tira de texto gris. El título y
+         la descripción se repiten aquí porque los lectores de enlaces no usan los de arriba.
+         La ruta de la imagen la reescribe `scripts/sellar-sw.mjs` tras compilar: nadie reescribe el
+         atributo `content` de una etiqueta meta, así que sola quedaría apuntando a la raíz del
+         dominio y daría 404 en la publicación, que va en un subdirectorio. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:site_name" content="SolarMe" />
+    <meta property="og:url" content="/" />
+    <meta property="og:title" content="SolarMe — Del domicilio a la propuesta imprimible" />
+    <meta property="og:description" content="Diseño solar para instaladores en México: rendimiento medido en 102 ciudades, inclinación y orientación óptimas del sitio, sombreado, series y protecciones. Funciona sin señal." />
+    <meta property="og:image" content="/vista-previa.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="SolarMe: del domicilio a la propuesta imprimible" />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- Las tipografías viajan dentro del proyecto (src/fonts.css + public/fonts). Antes se
          pedían a Google Fonts con un <link rel="stylesheet">, que bloquea el renderizado y
          exige red: sin señal la app caía a tipografías del sistema, y el sistema tipográfico es

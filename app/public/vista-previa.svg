@@ -1,0 +1,59 @@
+<!--
+  Lámina de vista previa: es la imagen que aparece cuando alguien pega el enlace de SolarMe en
+  WhatsApp, en Facebook o en un correo. Sin ella el enlace se comparte como una tira de texto gris,
+  y este producto se mueve entre instaladores justamente por WhatsApp.
+
+  El diseño mide 1200×630 —la proporción que recortan esas plataformas— pero el lienzo es CUADRADO
+  de 1200 y el diseño va centrado dentro, con el franjeado de fondo cubriendo todo. La razón es el
+  rasterizador disponible (`qlmanage`), que ajusta al lado mayor: con un lienzo de 1200×630 escalaba
+  el dibujo hasta que el alto llegaba a 1200 y luego lo cortaba, y el resultado perdía el logotipo y
+  la última columna. Con el lienzo cuadrado el rasterizado sale 1:1 y el recorte central de 630
+  devuelve exactamente el diseño. Se regenera rasterizando este archivo con `qlmanage -t -s 1200` y
+  recortando el PNG resultante con `sips -c 630 1200`, dejando la salida en vista-previa.png.
+
+  (Ojo al escribir estos comentarios: un comentario XML no admite dos guiones seguidos. Poner el
+  nombre largo de la opción de recorte tal cual invalidó este archivo, y un SVG inválido se sirve
+  con normalidad y se ve en blanco, sin error en ninguna parte. Lo vigila una prueba.)
+
+  El texto va con una serif del sistema y no con la Fraunces del producto: las tipografías del
+  proyecto viajan como woff2 dentro de la aplicación, no instaladas en el sistema, así que el
+  rasterizador no las vería. Se acepta la diferencia porque el PNG se genera una vez y se guarda.
+
+  Las cifras son las mismas que la portada de la aplicación: 102 sitios medidos y 140 módulos del
+  listado de la CEC. Si esos números cambian, cambian aquí.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
+  <rect width="1200" height="1200" fill="#fbfaf8" />
+  <rect width="14" height="1200" fill="#c2410c" />
+
+  <!-- el diseño de 1200×630, centrado en el lienzo cuadrado: (1200 − 630) / 2 = 285 -->
+  <g transform="translate(0 285)">
+    <!-- sol de la marca -->
+    <g transform="translate(96 60) scale(2.4)">
+      <circle cx="12" cy="12" r="4.6" fill="#ea580c" />
+      <g stroke="#ea580c" stroke-width="2.4" stroke-linecap="round" fill="none">
+        <path d="M12 1.7v2.4M12 19.9v2.4M1.7 12h2.4M19.9 12h2.4" />
+        <path d="M4.4 4.4l1.8 1.8M17.8 17.8l1.8 1.8M19.6 4.4l-1.8 1.8M6.2 17.8l-1.8 1.8" />
+      </g>
+    </g>
+    <text x="160" y="94" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#1c1917">SolarMe</text>
+
+    <text x="96" y="248" font-family="Georgia, 'Times New Roman', serif" font-size="68" fill="#1c1917">Del domicilio a la</text>
+    <text x="96" y="328" font-family="Georgia, 'Times New Roman', serif" font-size="68" fill="#1c1917">propuesta imprimible</text>
+
+    <text x="96" y="398" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#57534e">Diseño solar para instaladores en México</text>
+
+    <line x1="96" y1="452" x2="1104" y2="452" stroke="#e7e2dc" stroke-width="2" />
+
+    <g font-family="Helvetica, Arial, sans-serif" font-size="25" fill="#44403c">
+      <text x="96" y="508">102 ciudades medidas</text>
+      <text x="452" y="508">140 módulos reales</text>
+      <text x="792" y="508">Funciona sin señal</text>
+    </g>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#78716c">
+      <text x="96" y="542">Rendimiento, inclinación, temperaturas</text>
+      <text x="452" y="542">Del listado de la CEC</text>
+      <text x="792" y="542">La física va en la aplicación</text>
+    </g>
+  </g>
+</svg>

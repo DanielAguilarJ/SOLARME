@@ -1,0 +1,24 @@
+<!--
+  Icono de la aplicación instalada, del que se rasterizan los PNG del manifiesto.
+
+  Es distinto del favicon a propósito. En la pantalla de inicio de un teléfono el lanzador recorta
+  el icono con la forma que le da la gana —círculo, rombo, cuadrado redondeado— y encima lo pone
+  sobre un fondo que puede ser claro o oscuro. Un sol naranja sobre transparente se perdería en un
+  fondo claro y se recortaría por los rayos. Por eso:
+
+    · el fondo cubre el lienzo entero con el naranja de marca, así que la máscara siempre recorta
+      color y nunca el glifo;
+    · el sol va blanco y ocupa el 56 % central, dentro de la zona segura que la especificación de
+      iconos «maskable» reserva (el 80 % central del lienzo puede quedar visible; lo de fuera no
+      está garantizado).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="SolarMe">
+  <rect width="512" height="512" fill="#c2410c" />
+  <g transform="translate(112 112) scale(12)">
+    <circle cx="12" cy="12" r="4.6" fill="#ffffff" />
+    <g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" fill="none">
+      <path d="M12 1.7v2.4M12 19.9v2.4M1.7 12h2.4M19.9 12h2.4" />
+      <path d="M4.4 4.4l1.8 1.8M17.8 17.8l1.8 1.8M19.6 4.4l-1.8 1.8M6.2 17.8l-1.8 1.8" />
+    </g>
+  </g>
+</svg>

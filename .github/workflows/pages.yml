@@ -41,10 +41,20 @@ jobs:
       - name: Instalar dependencias exactas
         run: npm ci
 
-      - name: Compilar (lint, tipos, 920 pruebas y build)
-        run: npm run build
+      - name: Compilar (lint, tipos, pruebas y build)
+        # SITE_URL es para la imagen de vista previa al compartir el enlace: los lectores de
+        # enlaces exigen una dirección absoluta, y solo aquí se sabe el dominio. Se pasa por
+        # variables de entorno y se compone con comillas para no interpolar nada en la orden.
+        # El nombre del propietario va en minúsculas porque esa es la forma canónica del dominio.
+        run: |
+          duenio=$(printf '%s' "$PROPIETARIO" | tr '[:upper:]' '[:lower:]')
+          export SITE_URL="https://${duenio}.github.io/${REPOSITORIO}"
+          echo "SITE_URL=$SITE_URL"
+          npm run build
         env:
           BASE_URL: /${{ github.event.repository.name }}/
+          PROPIETARIO: ${{ github.repository_owner }}
+          REPOSITORIO: ${{ github.event.repository.name }}
 
       - name: Preparar el artefacto
         uses: actions/upload-pages-artifact@v3
