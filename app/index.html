@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- El título y la descripción decían «por satélite», y eso es justo lo único que el producto
+         todavía NO hace: no hay imagen aérea ni techo medido, el instalador captura el contorno y
+         la app lo declara así en pantalla. Prometerlo en la pestaña y en el resultado de búsqueda
+         era la sobreafirmación más visible que quedaba. Se titula el diferenciador real, que es
+         más fuerte y además es verdad: la física está medida ciudad por ciudad. Cuando haya
+         imagen aérea, este texto vuelve a cambiar. -->
+    <title>SolarMe — Diseño solar con física medida de México</title>
+    <meta name="description" content="Del domicilio a la propuesta imprimible: rendimiento medido en 102 ciudades de los 32 estados, inclinación y orientación óptimas del sitio, sombreado, series y protecciones. Para instaladores." />
+    <!-- Sin esta declaración el navegador pide /favicon.ico por su cuenta y se lleva un 404 en
+         CADA carga —medido sobre la compilación de producción— además de dejar la pestaña sin
+         icono. El SVG ya viajaba en el proyecto; solo faltaba enlazarlo. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Color de la barra del navegador en móvil, que es donde se usa esto en una azotea. -->
+    <meta name="theme-color" content="#fbfaf8" />
+    <!-- Las tipografías viajan dentro del proyecto (src/fonts.css + public/fonts). Antes se
+         pedían a Google Fonts con un <link rel="stylesheet">, que bloquea el renderizado y
+         exige red: sin señal la app caía a tipografías del sistema, y el sistema tipográfico es
+         la mitad de este diseño. También evita una petición a un tercero en cada carga. -->
+    <link rel="preload" href="/fonts/inter-latin-c9407645.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

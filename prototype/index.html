@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SolarMe — Diseño solar en segundos</title>
+<style>
+  :root{
+    --bg:#0a0e17; --bg2:#0d1220; --panel:#121a2b; --panel2:#0f1626;
+    --line:#1e2a42; --text:#e8edf7; --muted:#93a1bd; --muted2:#63708c;
+    --amber:#ffb020; --amber2:#ff7a1a; --green:#2ee6a5; --green2:#12b981;
+    --blue:#4c8dff; --shadow:0 20px 60px rgba(0,0,0,.45);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#15203a 0%,transparent 60%),
+               radial-gradient(900px 700px at -10% 10%,#12261f 0%,transparent 55%),
+               var(--bg);
+    color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  a{color:inherit;text-decoration:none}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
+    background:rgba(10,14,23,.72);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.02em;font-size:19px}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--amber),var(--amber2));
+    display:grid;place-items:center;box-shadow:0 6px 18px rgba(255,140,20,.35)}
+  .logo svg{width:19px;height:19px}
+  .navlinks{display:flex;gap:26px;color:var(--muted);font-size:14px;font-weight:500}
+  .navlinks a:hover{color:var(--text)}
+  .btn{border:none;cursor:pointer;font-weight:600;font-size:14px;border-radius:12px;padding:11px 18px;
+    transition:.18s transform,.18s box-shadow,.18s background}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:linear-gradient(135deg,var(--amber),var(--amber2));color:#20140a;
+    box-shadow:0 10px 24px rgba(255,140,20,.28)}
+  .btn-primary:hover{box-shadow:0 14px 30px rgba(255,140,20,.42)}
+  .btn-ghost{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:#33456b}
+
+  /* Hero */
+  .hero{padding:72px 0 40px;text-align:center}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    color:var(--muted);font-size:13px;padding:7px 14px;border-radius:999px;margin-bottom:22px}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  h1{font-size:clamp(34px,5.4vw,58px);line-height:1.04;letter-spacing:-.035em;font-weight:850;
+    background:linear-gradient(180deg,#fff,#b9c6e2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:clamp(16px,2vw,19px);max-width:620px;margin:20px auto 0}
+
+  /* Search */
+  .searchbar{margin:34px auto 0;max-width:640px;display:flex;gap:10px;background:var(--panel);
+    border:1px solid var(--line);border-radius:16px;padding:9px 9px 9px 18px;box-shadow:var(--shadow)}
+  .searchbar svg{flex:none;align-self:center;color:var(--muted2)}
+  .searchbar input{flex:1;background:transparent;border:none;color:var(--text);font-size:16px;outline:none}
+  .searchbar input::placeholder{color:var(--muted2)}
+  .chips{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;
+    padding:7px 13px;border-radius:999px;cursor:pointer;transition:.15s}
+  .chip:hover{color:var(--text);border-color:#33456b}
+
+  /* App / analysis */
+  .app{display:none;padding:26px 0 20px}
+  .app.show{display:block;animation:rise .5s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  .app-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+  .app-head .addr{font-size:15px;color:var(--muted)}
+  .app-head .addr b{color:var(--text)}
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+  .card h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;font-weight:700}
+
+  /* Roof viz */
+  .roofwrap{position:relative;border-radius:14px;overflow:hidden;background:
+    linear-gradient(135deg,#243247,#141d2e);border:1px solid var(--line);aspect-ratio:16/11}
+  .roofwrap svg{width:100%;height:100%;display:block}
+  .sat-note{position:absolute;left:12px;bottom:10px;font-size:11px;color:#cbd5ea;background:rgba(0,0,0,.4);
+    padding:4px 9px;border-radius:7px;backdrop-filter:blur(4px)}
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--muted)}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+
+  /* Metrics */
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:15px}
+  .metric .k{font-size:12px;color:var(--muted);font-weight:600}
+  .metric .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+  .metric .v small{font-size:14px;color:var(--muted);font-weight:600}
+  .metric.hl .v{background:linear-gradient(135deg,var(--green),var(--green2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .metric.amber .v{background:linear-gradient(135deg,var(--amber),var(--amber2));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* Controls */
+  .ctrl{margin-bottom:16px}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:7px;font-weight:600}
+  .ctrl label b{color:var(--text)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:99px;
+    background:linear-gradient(90deg,var(--amber),var(--amber2));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4);border:3px solid var(--amber2)}
+  .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px}
+  .seg button{flex:1;background:transparent;border:none;color:var(--muted);padding:9px;border-radius:8px;
+    cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .seg button.on{background:var(--amber);color:#20140a}
+  .opt-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);
+    background:rgba(46,230,165,.1);border:1px solid rgba(46,230,165,.25);padding:4px 10px;border-radius:999px}
+
+  /* Catalog */
+  .section{padding:40px 0}
+  .section > .wrap > h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.03em;font-weight:800}
+  .section .lead{color:var(--muted);margin-top:8px;max-width:640px}
+  .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 20px}
+  @media(max-width:760px){.filters{grid-template-columns:1fr 1fr}}
+  .filters .f{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px}
+  .filters .f label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:8px}
+  .filters select,.filters input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--line);
+    color:var(--text);border-radius:9px;padding:9px;font-size:14px;outline:none}
+  .cat{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.cat{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.cat{grid-template-columns:1fr}}
+  .pcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;position:relative;transition:.18s}
+  .pcard:hover{border-color:#33456b;transform:translateY(-3px)}
+  .pcard.top{border-color:var(--green2);box-shadow:0 0 0 1px var(--green2),0 18px 40px rgba(18,185,129,.15)}
+  .pcard .brand-t{font-size:12px;color:var(--muted);font-weight:600}
+  .pcard .model{font-size:17px;font-weight:800;letter-spacing:-.02em;margin:2px 0 12px}
+  .pcard .spec{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid var(--line);color:var(--muted)}
+  .pcard .spec b{color:var(--text);font-weight:700}
+  .pcard .rec{position:absolute;top:-11px;right:14px;background:linear-gradient(135deg,var(--green),var(--green2));
+    color:#062a1e;font-size:11px;font-weight:800;padding:5px 11px;border-radius:999px;letter-spacing:.02em}
+  .pcard .pick{margin-top:13px;width:100%}
+  .score{margin-top:10px;font-size:12px;color:var(--muted)}
+  .score .bar{height:6px;border-radius:99px;background:var(--panel2);margin-top:5px;overflow:hidden}
+  .score .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--green))}
+
+  footer{border-top:1px solid var(--line);padding:30px 0;color:var(--muted2);font-size:13px;text-align:center;margin-top:20px}
+  .disc{background:rgba(76,141,255,.08);border:1px solid rgba(76,141,255,.2);border-radius:12px;
+    padding:12px 15px;font-size:12.5px;color:var(--muted);margin-top:16px}
+  /* Instaladores */
+  .inst{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+  @media(max-width:900px){.inst{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.inst{grid-template-columns:1fr}}
+  .icard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;transition:.18s}
+  .icard:hover{border-color:#33456b;transform:translateY(-3px)}
+  .icard .top-row{display:flex;align-items:center;gap:12px}
+  .icard .avatar{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;
+    color:#20140a;background:linear-gradient(135deg,var(--amber),var(--amber2));font-size:17px}
+  .icard .nm{font-weight:800;font-size:16px;letter-spacing:-.01em}
+  .icard .ct{font-size:12.5px;color:var(--muted)}
+  .icard .stars{color:var(--amber);font-size:13px;margin:10px 0 4px}
+  .icard .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .icard .tag{font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);
+    padding:3px 9px;border-radius:999px}
+  .icard .meta{font-size:12px;color:var(--muted);margin-top:11px;display:flex;justify-content:space-between}
+  .icard .meta b{color:var(--text)}
+  .verified{color:var(--green);font-size:12px}
+
+  /* Propuesta imprimible */
+  #proposal{display:none}
+  @media print{
+    body *{visibility:hidden}
+    #proposal,#proposal *{visibility:visible}
+    #proposal{display:block!important;position:absolute;inset:0;background:#fff;color:#111;padding:44px 52px;font-size:13px}
+    #proposal h1{color:#111;-webkit-text-fill-color:#111}
+    @page{margin:14mm}
+  }
+  #proposal .p-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #ff7a1a;padding-bottom:14px}
+  #proposal .p-brand{font-size:24px;font-weight:900;color:#ff7a1a}
+  #proposal table{width:100%;border-collapse:collapse;margin-top:18px}
+  #proposal td{padding:9px 6px;border-bottom:1px solid #e4e7ee}
+  #proposal td:last-child{text-align:right;font-weight:700}
+  #proposal .big{font-size:30px;font-weight:900;color:#12b981}
+  #proposal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+  #proposal .box{border:1px solid #e4e7ee;border-radius:10px;padding:16px}
+  #proposal .foot{margin-top:24px;font-size:11px;color:#888}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" stroke="#20140a" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="4" fill="#20140a"/></svg></span>
+      SolarMe
+    </div>
+    <nav class="navlinks">
+      <a href="#analisis">Análisis</a>
+      <a href="#catalogo">Paneles</a>
+      <a href="#">Instaladores</a>
+      <a href="#">Precios</a>
+    </nav>
+    <button class="btn btn-primary" onclick="document.getElementById('addr').focus()">Empezar gratis</button>
+  </div>
+</header>
+
+<section class="hero wrap" id="analisis">
+  <span class="pill"><span class="dot"></span> Diseño solar asistido por satélite</span>
+  <h1>Del domicilio a la propuesta<br/>en menos de 60 segundos</h1>
+  <p class="sub">Escribe una dirección y SolarMe proyecta la instalación óptima sobre el techo: cuántos paneles caben, el ángulo perfecto, la energía que producirán y el mejor panel para ese clima.</p>
+
+  <form class="searchbar" onsubmit="analizar();return false;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.6" stroke="currentColor" stroke-width="1.8"/></svg>
+    <input id="addr" placeholder="Ej. Av. Reforma 222, Ciudad de México" autocomplete="off" />
+    <button class="btn btn-primary" type="submit">Analizar techo</button>
+  </form>
+  <div class="chips" id="chips"></div>
+</section>
+
+<section class="wrap app" id="app">
+  <div class="app-head">
+    <div class="addr">📍 <b id="outAddr">—</b> · <span id="outCity">—</span></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="opt-badge" id="optBadge">Configuración óptima aplicada</span>
+      <button class="btn btn-primary" onclick="generarPropuesta()">📄 Generar propuesta (PDF)</button>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h3>Vista del techo · proyección de paneles</h3>
+      <div class="roofwrap"><svg id="roof" viewBox="0 0 640 440" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="sat-note">Vista simulada · en producción: Google Solar API / imagen satelital</div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#2ee6a5"></i>Panel instalado</span>
+        <span><i style="background:#243247"></i>Techo utilizable</span>
+        <span><i style="background:#ffb020"></i>Orientación (azimut)</span>
+      </div>
+      <div class="metrics" style="margin-top:16px">
+        <div class="metric"><div class="k">Paneles que caben</div><div class="v"><span id="mCount">0</span></div></div>
+        <div class="metric"><div class="k">Tamaño del sistema</div><div class="v"><span id="mKwp">0</span> <small>kWp</small></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <h3>Resultado energético y económico</h3>
+        <div class="metrics">
+          <div class="metric hl"><div class="k">Producción anual</div><div class="v"><span id="mKwh">0</span> <small>kWh</small></div></div>
+          <div class="metric amber"><div class="k">Ahorro estimado / año</div><div class="v">$<span id="mSave">0</span></div></div>
+          <div class="metric"><div class="k">CO₂ evitado / año</div><div class="v"><span id="mCo2">0</span> <small>ton</small></div></div>
+          <div class="metric"><div class="k">Cobertura del recibo</div><div class="v"><span id="mCov">0</span><small>%</small></div></div>
+          <div class="metric" style="grid-column:1/-1"><div class="k">Inversión estimada · retorno</div><div class="v">$<span id="mCapex">0</span> <small>· recupera en <span id="mPay">0</span> años</small></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Ajustes de instalación</h3>
+        <div class="ctrl">
+          <label>Área de techo utilizable <b><span id="vArea">35</span> m²</b></label>
+          <input type="range" id="area" min="15" max="400" value="35" />
+        </div>
+        <div class="ctrl">
+          <label>Inclinación (tilt) <b><span id="vTilt">19</span>°</b> <span id="tiltOpt" style="color:var(--green)"></span></label>
+          <input type="range" id="tilt" min="0" max="60" value="19" />
+        </div>
+        <div class="ctrl">
+          <label>Orientación (azimut) <b><span id="vAzTxt">Sur</span></b> <span id="azOpt" style="color:var(--green)"></span></label>
+          <input type="range" id="az" min="90" max="270" value="180" />
+        </div>
+        <div class="ctrl">
+          <label>Sombreado del sitio <b><span id="vShade">Sin sombra</span></b></label>
+          <input type="range" id="shade" min="0" max="35" value="0" />
+        </div>
+        <div class="ctrl">
+          <label style="margin-bottom:9px">Tipo de proyecto</label>
+          <div class="seg" id="segType">
+            <button class="on" data-t="res">Residencial</button>
+            <button data-t="com">Comercial</button>
+            <button data-t="ind">Industrial</button>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="width:100%" onclick="optimizar()">↺ Volver a la configuración óptima</button>
+      </div>
+    </div>
+  </div>
+  <div class="disc">⚠️ Prototipo: el layout y los cálculos usan un modelo físico razonable (rendimiento específico por ciudad, factor de orientación tilt/azimut, pérdidas del sistema y factor de emisión de la red de México). En producción se sustituyen por <b>Google Solar API</b> y <b>NREL PVWatts / PVGIS</b> con datos reales del sitio.</div>
+</section>
+
+<section class="section" id="catalogo" style="border-top:1px solid var(--line)">
+  <div class="wrap">
+    <h2>El mejor panel para este proyecto</h2>
+    <p class="lead">SolarMe puntúa cada panel según tu clima, el espacio disponible y tu presupuesto. Filtra por rangos y elige con datos, no a ciegas.</p>
+    <div class="filters">
+      <div class="f"><label>Clima del sitio</label>
+        <select id="fClima"><option value="calido">Cálido / muy soleado</option><option value="templado" selected>Templado</option><option value="humedo">Húmedo / costa</option></select></div>
+      <div class="f"><label>Prioridad</label>
+        <select id="fPrio"><option value="balance" selected>Equilibrado</option><option value="espacio">Máx. potencia por m²</option><option value="precio">Menor precio</option><option value="calidad">Máx. calidad/garantía</option></select></div>
+      <div class="f"><label>Potencia mínima (W)</label><input type="number" id="fWatt" value="0" min="0" step="10" /></div>
+      <div class="f"><label>Precio máx. por watt (USD)</label><input type="number" id="fPrice" value="1" min="0" step="0.01" /></div>
+    </div>
+    <div class="cat" id="cat"></div>
+    <div class="disc">Datos de muestra basados en modelos reales del mercado. En producción se poblan desde la <b>base de datos CEC</b> (pública) y se amplían con <b>ENF Solar</b>/fabricantes con licencia; un actualizador mantiene precios y stock.</div>
+  </div>
+</section>
+
+<section class="section" id="instaladores" style="border-top:1px solid var(--line)">
+  <div class="wrap">
+    <h2>Encuentra instaladores certificados</h2>
+    <p class="lead">¿Eres dueño de un negocio o casa? Conecta con instaladores verificados de tu zona. ¿Eres instalador? Recibe proyectos calificados.</p>
+    <div class="filters" style="grid-template-columns:1fr 1fr">
+      <div class="f"><label>Ciudad</label>
+        <select id="iCity"><option value="">Todas</option><option>Ciudad de México</option><option>Guadalajara</option><option>Monterrey</option><option>Mérida</option><option>Tijuana</option></select></div>
+      <div class="f"><label>Especialidad</label>
+        <select id="iSpec"><option value="">Todas</option><option>Residencial</option><option>Comercial</option><option>Industrial</option><option>Baterías</option></select></div>
+    </div>
+    <div class="inst" id="inst"></div>
+    <div class="disc">Datos de muestra. En producción: instaladores reales verificados, con reseñas, certificaciones (p. ej. CONUEE) y sistema de solicitud de cotización dentro de la app.</div>
+  </div>
+</section>
+
+<div id="proposal"></div>
+
+<footer>SolarMe · Prototipo v0.1 · Diseño solar asistido por satélite para instaladores — hecho para México y LatAm</footer>
+
+<script>
+// ---------- Datos ----------
+const CITIES = {
+  "ciudad de mexico":{lat:19.4,yield:1760,name:"Ciudad de México"},
+  "cdmx":{lat:19.4,yield:1760,name:"Ciudad de México"},
+  "guadalajara":{lat:20.7,yield:1880,name:"Guadalajara"},
+  "monterrey":{lat:25.7,yield:1710,name:"Monterrey"},
+  "merida":{lat:21.0,yield:1820,name:"Mérida"},
+  "mérida":{lat:21.0,yield:1820,name:"Mérida"},
+  "tijuana":{lat:32.5,yield:1770,name:"Tijuana"},
+  "puebla":{lat:19.0,yield:1800,name:"Puebla"},
+  "cancun":{lat:21.2,yield:1830,name:"Cancún"},
+  "cancún":{lat:21.2,yield:1830,name:"Cancún"}
+};
+const DEFAULT_CITY={lat:22,yield:1760,name:"México (estimado)"};
+
+let PANELS=[
+  {brand:"LONGi",model:"Hi-MO 6 555W",w:555,eff:22.6,temp:-0.29,area:2.57,ppw:0.30,warr:25},
+  {brand:"Jinko Solar",model:"Tiger Neo 550W",w:550,eff:22.5,temp:-0.29,area:2.58,ppw:0.28,warr:25},
+  {brand:"Canadian Solar",model:"TOPHiKu6 570W",w:570,eff:22.1,temp:-0.29,area:2.58,ppw:0.27,warr:25},
+  {brand:"JA Solar",model:"DeepBlue 4.0 560W",w:560,eff:22.4,temp:-0.29,area:2.58,ppw:0.28,warr:25},
+  {brand:"Trina Solar",model:"Vertex S+ 445W",w:445,eff:22.3,temp:-0.30,area:1.99,ppw:0.31,warr:25},
+  {brand:"Q CELLS",model:"Q.TRON 430W",w:430,eff:22.3,temp:-0.29,area:1.93,ppw:0.34,warr:25},
+  {brand:"Risen",model:"Titan 590W",w:590,eff:22.9,temp:-0.26,area:2.58,ppw:0.26,warr:25},
+  {brand:"REC",model:"Alpha Pure-RX 470W",w:470,eff:22.6,temp:-0.24,area:2.08,ppw:0.42,warr:25},
+  {brand:"Maxeon",model:"Maxeon 6 440W",w:440,eff:22.8,temp:-0.29,area:1.93,ppw:0.55,warr:40}
+];
+
+// ---------- Estado ----------
+let S={lat:19.4,yield:1760,city:"Ciudad de México",area:35,tilt:19,az:180,shade:0,type:"res",panel:PANELS[0]};
+const CO2F=0.435;        // kg CO2 / kWh (red México)
+const LOSS=0.14;         // pérdidas del sistema
+
+// ---------- Cálculos ----------
+function optTilt(lat){return Math.round(Math.max(10,Math.min(35,lat*0.87+3.1)));}
+function orientationFactor(tilt,az,lat){
+  const ot=optTilt(lat), td=Math.abs(tilt-ot);
+  const fT=Math.max(0.60,1-0.0032*td-0.00016*td*td);
+  const ad=Math.abs(az-180);
+  const fA=Math.max(0.70,1-0.0009*ad-0.000010*ad*ad);
+  return fT*fA;
+}
+function azLabel(a){
+  if(a<=112)return"Este"; if(a<135)return"Sureste"; if(a<=157)return"Sur-sureste";
+  if(a<173)return"Sur ↙"; if(a<=187)return"Sur"; if(a<203)return"Sur ↘";
+  if(a<=225)return"Sur-suroeste"; if(a<247)return"Suroeste"; return"Oeste";
+}
+function panelCount(area,panel){return Math.max(0,Math.floor((area*0.72)/panel.area));}
+const CONSUMO={res:6000,com:34000,ind:170000};   // kWh/año de referencia por tipo
+const TARIFA={res:3.5,com:3.2,ind:2.4};           // MXN/kWh por tipo
+function compute(){
+  const n=panelCount(S.area,S.panel);
+  const kwp=n*S.panel.w/1000;
+  const of=orientationFactor(S.tilt,S.az,S.lat);
+  const sf=1-S.shade/100;
+  const kwh=kwp*S.yield*of*sf*(1-LOSS);
+  const tariff=TARIFA[S.type]||3.5;
+  const cons=CONSUMO[S.type]||6000;
+  const save=kwh*tariff;
+  const co2=kwh*CO2F/1000;
+  const cov=Math.min(200,Math.round(kwh/cons*100));
+  const capex=kwp*1000*17.5;                       // CAPEX aprox MXN (~$17.5/W instalado)
+  const payback=save>0?capex/save:0;
+  return {n,kwp,kwh,save,co2,cov,of,capex,payback,tariff};
+}
+function fmt(x){return x.toLocaleString('es-MX');}
+
+// ---------- Render techo ----------
+function drawRoof(n){
+  const svg=document.getElementById('roof');
+  const W=640,H=440; let s='';
+  s+=`<defs><linearGradient id="rf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b3a52"/><stop offset="1" stop-color="#16202f"/></linearGradient></defs>`;
+  // roof polygon (perspective-ish)
+  const rx=90,ry=70,rw=460,rh=300;
+  s+=`<polygon points="${rx+40},${ry} ${rx+rw},${ry+20} ${rx+rw-30},${ry+rh} ${rx},${ry+rh-30}" fill="url(#rf)" stroke="#3a4c6b" stroke-width="2"/>`;
+  // panels grid
+  const cols=Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols);
+  const gx=rx+70, gy=ry+45, gw=rw-140, gh=rh-110;
+  const pw=gw/cols*0.86, ph=gh/rows*0.86, cx=gw/cols, cy=gh/rows;
+  let k=0;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ if(k>=n)break;
+    const x=gx+c*cx, y=gy+r*cy;
+    s+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${pw.toFixed(1)}" height="${ph.toFixed(1)}" rx="2" fill="#12b981" opacity="${0.82+((r+c)%2)*0.12}" stroke="#0a3f30" stroke-width="1"/>`;
+    s+=`<line x1="${x.toFixed(1)}" y1="${(y+ph/2).toFixed(1)}" x2="${(x+pw).toFixed(1)}" y2="${(y+ph/2).toFixed(1)}" stroke="#0a3f30" stroke-width="0.6" opacity="0.5"/>`;
+    k++;
+  }
+  // azimuth compass arrow
+  const ang=(S.az-180)*Math.PI/180, ox=560,oy=100,L=34;
+  s+=`<circle cx="${ox}" cy="${oy}" r="26" fill="rgba(0,0,0,.35)" stroke="#33456b"/>`;
+  s+=`<line x1="${ox}" y1="${oy}" x2="${ox+L*Math.sin(ang)}" y2="${oy+L*Math.cos(ang)}" stroke="#ffb020" stroke-width="3" stroke-linecap="round"/>`;
+  s+=`<text x="${ox}" y="${oy-30}" fill="#93a1bd" font-size="11" text-anchor="middle">N</text>`;
+  svg.innerHTML=s;
+}
+
+// ---------- Render catálogo ----------
+function scorePanel(p){
+  const clima=document.getElementById('fClima').value;
+  const prio=document.getElementById('fPrio').value;
+  let sc=0;
+  sc+=(p.eff-21)/2.5*30;                        // eficiencia (0-~30)
+  sc+=(0.6-p.ppw)/0.4*25;                        // precio (barato mejor)
+  sc+=(0.32-Math.abs(p.temp))/0.12*20;           // coef temperatura (menos negativo mejor)
+  sc+=(p.warr-25)/15*10;                         // garantía
+  if(clima==="calido")sc+=(0.32-Math.abs(p.temp))/0.12*18; // clima cálido pesa temp
+  if(clima==="humedo")sc+=(p.warr-25)/15*8;
+  if(prio==="espacio")sc+=(p.eff-21)/2.5*30;
+  if(prio==="precio")sc+=(0.6-p.ppw)/0.4*35;
+  if(prio==="calidad")sc+=((p.warr-25)/15*20)+((0.32-Math.abs(p.temp))/0.12*12);
+  return Math.max(4,Math.min(100,Math.round(sc+38)));
+}
+function renderCat(){
+  const minW=+document.getElementById('fWatt').value||0;
+  const maxP=+document.getElementById('fPrice').value||99;
+  let list=PANELS.filter(p=>p.w>=minW&&p.ppw<=maxP).map(p=>({...p,score:scorePanel(p)}))
+                 .sort((a,b)=>b.score-a.score);
+  const el=document.getElementById('cat'); el.innerHTML='';
+  list.forEach((p,i)=>{
+    const d=document.createElement('div'); d.className='pcard'+(i===0?' top':'');
+    d.innerHTML=`${i===0?'<span class="rec">★ Recomendado</span>':''}
+      <div class="brand-t">${p.brand}</div><div class="model">${p.model}</div>
+      <div class="spec"><span>Potencia</span><b>${p.w} W</b></div>
+      <div class="spec"><span>Eficiencia</span><b>${p.eff}%</b></div>
+      <div class="spec"><span>Coef. temp.</span><b>${p.temp}%/°C</b></div>
+      <div class="spec"><span>Precio aprox.</span><b>$${p.ppw}/W</b></div>
+      <div class="spec"><span>Garantía</span><b>${p.warr} años</b></div>
+      <div class="score">Compatibilidad con tu proyecto: <b style="color:#fff">${p.score}/100</b>
+        <div class="bar"><i style="width:${p.score}%"></i></div></div>
+      <button class="btn btn-ghost pick" onclick='usarPanel(${JSON.stringify(p)})'>Usar este panel</button>`;
+    el.appendChild(d);
+  });
+}
+function usarPanel(p){S.panel=p;render();document.getElementById('app').scrollIntoView({behavior:'smooth'});}
+
+// ---------- UI wiring ----------
+function analizar(){
+  const q=document.getElementById('addr').value.trim();
+  const key=q.toLowerCase();
+  let city=DEFAULT_CITY;
+  for(const k in CITIES){ if(key.includes(k)){city=CITIES[k];break;} }
+  S.lat=city.lat; S.yield=city.yield; S.city=city.name;
+  document.getElementById('outAddr').textContent=q||"Domicilio de ejemplo";
+  document.getElementById('outCity').textContent=city.name+" · lat "+city.lat+"°";
+  optimizar(true);
+  document.getElementById('app').classList.add('show');
+  document.getElementById('app').scrollIntoView({behavior:'smooth'});
+}
+function optimizar(silent){
+  S.tilt=optTilt(S.lat); S.az=180; S.shade=0;
+  document.getElementById('tilt').value=S.tilt;
+  document.getElementById('az').value=180;
+  document.getElementById('shade').value=0;
+  render();
+}
+function render(){
+  document.getElementById('vArea').textContent=S.area;
+  document.getElementById('vTilt').textContent=S.tilt;
+  document.getElementById('vAzTxt').textContent=azLabel(S.az);
+  document.getElementById('vShade').textContent=S.shade===0?"Sin sombra":S.shade+"% pérdida";
+  const ot=optTilt(S.lat);
+  document.getElementById('tiltOpt').textContent=(S.tilt===ot)?"✓ óptimo":"óptimo: "+ot+"°";
+  document.getElementById('azOpt').textContent=(S.az===180)?"✓ óptimo":"óptimo: Sur";
+  const r=compute();
+  document.getElementById('mCount').textContent=r.n;
+  document.getElementById('mKwp').textContent=r.kwp.toFixed(1);
+  document.getElementById('mKwh').textContent=fmt(Math.round(r.kwh));
+  document.getElementById('mSave').textContent=fmt(Math.round(r.save));
+  document.getElementById('mCo2').textContent=r.co2.toFixed(1);
+  document.getElementById('mCov').textContent=r.cov;
+  document.getElementById('mCapex').textContent=fmt(Math.round(r.capex));
+  document.getElementById('mPay').textContent=r.payback.toFixed(1);
+  document.getElementById('optBadge').style.display=(S.tilt===ot&&S.az===180&&S.shade===0)?'inline-flex':'none';
+  drawRoof(r.n);
+}
+// listeners
+['area','tilt','az','shade'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    S[id==='az'?'az':id]= +e.target.value; render();
+  });
+});
+document.getElementById('segType').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); S.type=b.dataset.t;
+  const presets={res:35,com:180,ind:400}; S.area=presets[S.type];
+  document.getElementById('area').value=S.area; render();
+});
+['fClima','fPrio','fWatt','fPrice'].forEach(id=>document.getElementById(id).addEventListener('input',renderCat));
+// ---------- Instaladores ----------
+const INSTALLERS=[
+  {n:"SolarTech MX",c:"Ciudad de México",r:4.9,rev:128,specs:["Residencial","Baterías"],mw:"2.4 MW",proj:340},
+  {n:"Helios Instalaciones",c:"Guadalajara",r:4.8,rev:96,specs:["Residencial","Comercial"],mw:"3.1 MW",proj:410},
+  {n:"EcoWatt Norte",c:"Monterrey",r:4.7,rev:74,specs:["Comercial","Industrial"],mw:"6.8 MW",proj:190},
+  {n:"Península Solar",c:"Mérida",r:4.9,rev:150,specs:["Residencial","Comercial"],mw:"2.9 MW",proj:520},
+  {n:"Frontera Renovable",c:"Tijuana",r:4.6,rev:52,specs:["Residencial"],mw:"1.5 MW",proj:210},
+  {n:"Volt Industrial",c:"Monterrey",r:4.8,rev:63,specs:["Industrial","Baterías"],mw:"12 MW",proj:88}
+];
+function stars(r){const f=Math.round(r);return "★".repeat(f)+"☆".repeat(5-f);}
+function renderInst(){
+  const city=document.getElementById('iCity').value, spec=document.getElementById('iSpec').value;
+  const el=document.getElementById('inst'); el.innerHTML='';
+  INSTALLERS.filter(i=>(!city||i.c===city)&&(!spec||i.specs.includes(spec)))
+    .sort((a,b)=>b.r-a.r).forEach(i=>{
+    const d=document.createElement('div'); d.className='icard';
+    d.innerHTML=`<div class="top-row"><div class="avatar">${i.n[0]}</div>
+      <div><div class="nm">${i.n} <span class="verified">✓</span></div><div class="ct">📍 ${i.c}</div></div></div>
+      <div class="stars">${stars(i.r)} <span style="color:var(--muted)">${i.r} · ${i.rev} reseñas</span></div>
+      <div class="tags">${i.specs.map(s=>`<span class="tag">${s}</span>`).join('')}</div>
+      <div class="meta"><span>Instalado: <b>${i.mw}</b></span><span><b>${i.proj}</b> proyectos</span></div>
+      <button class="btn btn-ghost pick" style="margin-top:13px" onclick="alert('En la app: solicitud de cotización a ${i.n}')">Solicitar cotización</button>`;
+    el.appendChild(d);
+  });
+}
+['iCity','iSpec'].forEach(id=>document.getElementById(id).addEventListener('input',renderInst));
+
+// ---------- Propuesta (PDF vía impresión) ----------
+function generarPropuesta(){
+  const r=compute();
+  const hoy=new Date().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('proposal').innerHTML=`
+    <div class="p-head"><div><div class="p-brand">☀ SolarMe</div><div style="color:#888">Propuesta de instalación solar</div></div>
+      <div style="text-align:right;font-size:12px;color:#666">${hoy}<br/>Folio SM-${Math.floor(Math.random()*90000+10000)}</div></div>
+    <p style="margin-top:18px"><b>Domicilio:</b> ${document.getElementById('outAddr').textContent} · ${S.city}<br/>
+    <b>Tipo de proyecto:</b> ${({res:'Residencial',com:'Comercial',ind:'Industrial'})[S.type]}</p>
+    <div class="grid2">
+      <div class="box"><div style="color:#666;font-size:12px">Producción estimada</div><div class="big">${fmt(Math.round(r.kwh))} kWh/año</div></div>
+      <div class="box"><div style="color:#666;font-size:12px">Ahorro estimado</div><div class="big" style="color:#ff7a1a">$${fmt(Math.round(r.save))} /año</div></div>
+    </div>
+    <table>
+      <tr><td>Paneles propuestos</td><td>${r.n} × ${S.panel.model}</td></tr>
+      <tr><td>Tamaño del sistema</td><td>${r.kwp.toFixed(2)} kWp</td></tr>
+      <tr><td>Inclinación / orientación</td><td>${S.tilt}° / ${azLabel(S.az)}</td></tr>
+      <tr><td>Cobertura del consumo</td><td>${r.cov}%</td></tr>
+      <tr><td>CO₂ evitado</td><td>${r.co2.toFixed(1)} ton/año</td></tr>
+      <tr><td>Inversión estimada</td><td>$${fmt(Math.round(r.capex))} MXN</td></tr>
+      <tr><td>Retorno de inversión</td><td>${r.payback.toFixed(1)} años</td></tr>
+    </table>
+    <div class="foot">Estimación generada por SolarMe con modelo físico (rendimiento por ubicación, orientación, pérdidas y factor de emisión de México). Los valores finales se confirman con datos satelitales del sitio y visita técnica. Precios y tarifas de referencia, sujetos a cambio.</div>`;
+  window.print();
+}
+
+// city chips
+const chips=["Ciudad de México","Guadalajara","Monterrey","Mérida","Tijuana","Cancún"];
+const cc=document.getElementById('chips');
+chips.forEach(c=>{const b=document.createElement('div');b.className='chip';b.textContent='📍 '+c;
+  b.onclick=()=>{document.getElementById('addr').value=c;analizar();};cc.appendChild(b);});
+renderCat();
+renderInst();
+
+// Catálogo real desde la base CEC (scraper/import_cec.py -> data/panels.json)
+fetch('data/panels.json?v='+Date.now()).then(r=>r.ok?r.json():null).then(d=>{
+  if(!d||!d.panels||!d.panels.length)return;
+  PANELS=d.panels; S.panel=PANELS[0];
+  renderCat();
+  if(document.getElementById('app').classList.contains('show'))render();
+  const note=document.querySelector('#catalogo .disc');
+  if(note)note.innerHTML='✅ Catálogo real: <b>'+d.count+' módulos</b> importados de la base <b>'+d.source+'</b>. El precio por watt es estimado por gama (CEC no publica precios); en producción se cruza con distribuidores.';
+}).catch(()=>{});
+</script>
+</body>
+</html>

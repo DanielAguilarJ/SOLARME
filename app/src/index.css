@@ -1,0 +1,113 @@
+@import "./fonts.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+
+  --color-paper: #fbfaf8;
+  --color-ink: #1a1a17;
+  --color-muted: #6b6862;
+  /* #9a968e daba 2.95:1 sobre blanco y 2.82 sobre el papel: WCAG AA pide 4.5 para texto
+     normal, así que el texto secundario de toda la app era ilegible para mucha gente y el
+     problema se agravaba con los tamaños chicos. #726e68 da 5.07 y 4.86.
+
+     Queda cerca de `muted` a propósito: con 4.5:1 como piso, una jerarquía de tres grises
+     sobre blanco es casi imposible en texto chico. La jerarquía la cargan el tamaño y el
+     peso, que es mejor tipografía de todos modos. */
+  --color-faint: #726e68;
+  --color-line: #ece9e3;
+  --color-card: #ffffff;
+
+  --color-solar-50: #fff7ed;
+  --color-solar-500: #ea580c;
+  /* #d94e0a daba 3.92:1 como texto sobre el naranja claro de los avisos. #c2410c da 4.88 y
+     arregla los seis lugares donde el naranja es texto, además de oscurecer el estado activo
+     de los botones. */
+  --color-solar-600: #c2410c;
+  /* Para el hover de un botón que ahora arranca en solar-600. */
+  --color-solar-700: #9a3412;
+  /* #15803d sobre el tinte verde al 10 % daba 4.38:1 y AA pide 4.5. #127038 da 5.39 sin
+     cambiar la familia del color. */
+  --color-leaf-600: #127038;
+  --color-slate-ink: #1e293b;
+}
+
+:root { color-scheme: light; }
+
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02","cv03","cv04","cv11";
+}
+
+/* Sliders refinados.
+ *
+ * La caja mide 44 px de alto aunque la barra se vea de 3 px, porque el área táctil de un
+ * `input[type=range]` es la caja del elemento y NO el pulgar que se pinta encima. Con la altura
+ * en 3 px solo se podía agarrar dentro de esa banda: en un teléfono, sobre una azotea, eso es
+ * inservible. La barra y el pulgar se dibujan con los pseudoelementos para que el aspecto no
+ * cambie. Firefox se atiende con sus propios prefijos. */
+input[type="range"]{
+  -webkit-appearance:none; appearance:none;
+  height:44px; background:transparent; outline:none; cursor:pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track{
+  height:3px; border-radius:99px; background:var(--color-line);
+}
+input[type="range"]::-moz-range-track{
+  height:3px; border-radius:99px; background:var(--color-line);
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+  /* centra el pulgar sobre una barra de 3 px: (3 − 18) / 2 */
+  margin-top:-7.5px;
+  background:#fff; border:1.5px solid var(--color-ink);
+  box-shadow:0 1px 3px rgba(0,0,0,.18); cursor:pointer; transition:transform .12s;
+}
+input[type="range"]::-moz-range-thumb{
+  width:18px; height:18px; border-radius:50%; border:1.5px solid var(--color-ink);
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.18); cursor:pointer;
+}
+input[type="range"]::-webkit-slider-thumb:active{ transform:scale(1.12); }
+input[type="range"]:focus-visible::-webkit-slider-thumb{
+  outline:2px solid var(--color-solar-600); outline-offset:2px;
+}
+
+/* En pantallas chicas la altura completa de 44 px deja demasiado hueco vertical entre controles,
+ * así que se recorta a 36 px, que sigue muy por encima del mínimo tocable. */
+@media (min-width: 640px){
+  input[type="range"]{ height:36px; }
+}
+
+@keyframes fade-up { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
+.fade-up { animation: fade-up .5s cubic-bezier(.2,.7,.2,1) both; }
+
+::selection { background: #ffd9bf; }
+
+/* En @layer components para que las utilidades de Tailwind (w-auto, pl-9, ...) puedan
+   sobreescribir ancho y padding cuando un campo concreto lo necesite. Fuera de la capa,
+   el CSS plano ganaba siempre y rompía la maquetación de los filtros. */
+@layer components {
+  .fld {
+    width: 100%; background: #fff; border: 1px solid var(--color-line);
+    border-radius: .6rem; padding: .55rem .7rem; font-size: .9rem;
+    color: var(--color-ink); outline: none; transition: border-color .12s;
+  }
+  .fld:focus { border-color: var(--color-ink); }
+
+  /* Tamaños diminutos que CRECEN en pantalla chica.
+   *
+   * La densidad de 10 y 11 px funciona en un escritorio, pero este producto se usa en una
+   * azotea, con un teléfono, a pleno sol: la auditoría móvil encontró 60 textos por debajo de
+   * 11 px solo en el catálogo. En vez de repetir un `sm:` en cincuenta lugares, el tamaño vive
+   * aquí y se aprieta a partir de 640 px, donde ya hay ratón y una pantalla cerca de la cara. */
+  .txt-micro { font-size: 11px; }
+  .txt-mini { font-size: 12px; }
+  @media (min-width: 640px) {
+    .txt-micro { font-size: 10px; }
+    .txt-mini { font-size: 11px; }
+  }
+}

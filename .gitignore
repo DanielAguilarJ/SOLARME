@@ -1,0 +1,21 @@
+# Sistema
+.DS_Store
+
+# Herramientas del agente (no forman parte del producto)
+.kiro/
+
+# Dependencias y compilados (por si git se ejecuta desde la raíz)
+node_modules/
+dist/
+dist-ssr/
+
+# Entorno con credenciales — nunca al repositorio
+.env
+.env.local
+.env.*.local
+
+# Python del scraper
+__pycache__/
+*.pyc
+.venv/
+venv/
